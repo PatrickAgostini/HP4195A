@@ -6,7 +6,6 @@ Created on Fri Mar 13 17:15:22 2015
 """
 
 #from plot2ax import plot2ax
-#Egal wat
 
 
 from Tkinter import *
@@ -23,7 +22,6 @@ import matplotlib.pyplot as plt
 #from PIL import Image, ImageTk
 
 class MainWindow:
-    x = 0
     
     def __init__(self): 
         self.root = Tk()
