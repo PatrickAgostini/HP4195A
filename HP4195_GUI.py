@@ -59,11 +59,22 @@ class MainWindow:
         self.portExtP1 = StringVar()
         self.portExtP2 = StringVar()
         self.calMode = IntVar()
-        self.charImp = IntVar()
+        
         
         self.checkIsncalNetwork = BooleanVar()
         self.checkShortNetwork = BooleanVar()
         self.calibStepCounter = 0
+        
+        # Calibration Settings
+        self.charImp = IntVar()
+        self.openCond = StringVar()
+        self.openCap = StringVar()
+        self.ldRes = StringVar()
+        self.ldInd = StringVar()
+        self.shtRes = StringVar()
+        self.shtInd = StringVar()
+        self.correctn = BooleanVar()
+        
       
         ###### plot #########
         self.xLbl = ''
@@ -676,6 +687,45 @@ class MainWindow:
             self.ax2.patch.set_visible(False)
             self.canvas.show()
             
+## Old Version of CalibrationtabNetwork   
+#    def buildCalibrationtabNetwork(self):
+#        frCalMode = Frame(self.calibrationtabNetwork)
+#        frCalMode.pack()
+#        CALMODES = [("Transmission",1),
+#                    ("Reflection",2)]    
+#        for text, mode in CALMODES:
+#            self.rbCalMode = Radiobutton (frCalMode,text=text,variable = self.calMode,value = mode,command = self.calModeCallback)
+#            self.rbCalMode.pack(side="left")
+#        self.calMode.set(1)
+#        
+#        
+#        imgTransCalibPath = "./Images/TransmissionCalibrationDiagram.gif"
+#        imgReflCalibPath = "./Images/ReflectionCalibrationDiagram.gif"
+#        self.imgTransCalib = PhotoImage(file=imgTransCalibPath)
+#        self.imgReflCalib = PhotoImage(file=imgReflCalibPath)
+#        self.imgCalibLbl = Label(self.calibrationtabNetwork,image=self.imgTransCalib)
+#        self.imgCalibLbl.pack()
+#        
+#        frCalCbtn = Frame(self.calibrationtabNetwork)
+#        frCalCbtn.pack()
+#        self.cbtnIsncalNetwork=Checkbutton(frCalCbtn,variable=self.checkIsncalNetwork,text="Perform Isolation Calibration")
+#        self.checkIsncalNetwork.set(True)        
+#        self.cbtnIsncalNetwork.pack(side="left")
+#        
+#        self.cbtnShortNetwork=Checkbutton(frCalCbtn,variable=self.checkShortNetwork,text="Perform Short Calibration")
+#        self.checkShortNetwork.set(True)        
+#        # don't pack yet
+#        
+#        
+#        self.msgCalibrationtabNetwork = Message(self.calibrationtabNetwork,width=self.imgTransCalib.width())
+#        self.msgCalibrationtabNetwork.config(text="Connect a power splitter, and a network as appropriate -- the MEASURE position shown above.")
+#        self.msgCalibrationtabNetwork.pack()
+#        
+#        self.btnNextCalibration = Button(self.calibrationtabNetwork,text='Start Calibration',command=self.nextButtonCallback)
+#        self.btnNextCalibration.pack()        
+#        
+#        self.calibStepCounter = 0
+#        
     
     def buildCalibrationtabNetwork(self):
         frCalMode = Frame(self.calibrationtabNetwork)
@@ -695,26 +745,115 @@ class MainWindow:
         self.imgCalibLbl = Label(self.calibrationtabNetwork,image=self.imgTransCalib)
         self.imgCalibLbl.pack()
         
-        frCalCbtn = Frame(self.calibrationtabNetwork)
-        frCalCbtn.pack()
-        self.cbtnIsncalNetwork=Checkbutton(frCalCbtn,variable=self.checkIsncalNetwork,text="Perform Isolation Calibration")
-        self.checkIsncalNetwork.set(True)        
-        self.cbtnIsncalNetwork.pack(side="left")
+        msg = Message(self.calibrationtabNetwork,text="Select stimulus and receiver settings before starting the calibration.",width=self.imgTransCalib.width())
+        msg.pack()
         
-        self.cbtnShortNetwork=Checkbutton(frCalCbtn,variable=self.checkShortNetwork,text="Perform Short Calibration")
-        self.checkShortNetwork.set(True)        
-        # don't pack yet
+        self.frTransBtns = Labelframe(self.calibrationtabNetwork, text="Calibration Setup")
+        self.frTransBtns.pack()
+        self.btnIso  = Button(self.frTransBtns,text="Isolation Calibration")
+        self.btnIso.pack(side="left", padx=5, pady=5)
+        self.btnThr  = Button(self.frTransBtns,text="Through Calibration")
+        self.btnThr.pack(side="left",padx=5, pady=5)
+        self.btnCor  = Checkbutton(self.frTransBtns,text="Correction", variable = self.correctn)
+        self.correctn.set(True)
+        self.btnCor.pack(side="left",padx=5, pady=5)
+        
+        self.btnCalibSettings = Button(self.frTransBtns,text="Settings",command=self.calibSettingsCallback)
+        self.btnCalibSettings.pack(side="left",padx=5, pady=5)        
+        
+    def calibSettingsCallback(self):
+        ySpacing = 2
+        
+        top = Toplevel(self.root)
+        top.title("Calibration Settings")
+        pw = PanedWindow(top, orient=VERTICAL)
+        pw.pack(fill=BOTH,expand=1)
+        
+        lfCharImp = Labelframe(pw,text="Characteristic Impedance")
+        lfCharImp.pack(fill=BOTH)
+        Z0 = [('50 Ohm',1),('75 Ohm',2)]
+        for text, mode in Z0:
+            rbZ0 = Radiobutton(lfCharImp,text=text, value=mode,variable=self.charImp)
+            rbZ0.pack(side="left")
+        self.charImp.set(1)
+        
+        pw.add(lfCharImp)
+        
+        lfOpenStd = Labelframe(pw,text="Open Standard")
+        lfOpenStd.pack(fill=BOTH)
+        
+        frOpenCond=Frame(lfOpenStd)
+        frOpenCond.pack(side="left")
+        lblOpenCond=Label(frOpenCond, text="Conductance [S]:", height=ySpacing)
+        lblOpenCond.pack(side="left")   
+        eOpenCond=Entry(frOpenCond,textvariable=self.openCond,width=8)
+        eOpenCond.bind('<Return>',self.eOpenCondCallback)
+        eOpenCond.pack(side="left") 
+        eOpenCond.pack(fill=X,anchor=E,padx=5) 
+        
+        frOpenCap=Frame(lfOpenStd)
+        frOpenCap.pack(side="left")
+        lblOpenCap=Label(frOpenCap, text="Capacitance [F]:", height=ySpacing)
+        lblOpenCap.pack(side="left")   
+        eOpenCap=Entry(frOpenCap,textvariable=self.openCap,width=8)
+        eOpenCap.bind('<Return>',self.eOpenCapCallback)
+        eOpenCap.pack(side="left") 
+        eOpenCap.pack(fill=X,anchor=E,padx=5) 
+        
+        pw.add(lfOpenStd)        
+        
+        lfLdStd = Labelframe(pw,text="Load Standard")
+        lfLdStd.pack(fill=BOTH)
+        
+        frLdRes=Frame(lfLdStd)
+        frLdRes.pack(side="left")
+        lblLdRes=Label(frLdRes, text="Resistance [Ohm]:", height=ySpacing)
+        lblLdRes.pack(side="left")   
+        eLdRes=Entry(frLdRes,textvariable=self.ldRes,width=8)
+        eLdRes.bind('<Return>',self.eLdResCallback)
+        eLdRes.pack(side="left") 
+        eLdRes.pack(fill=X,anchor=E,padx=5) 
+        
+        frLdInd=Frame(lfLdStd)
+        frLdInd.pack(side="left")
+        lblLdInd=Label(frLdInd, text="Inductance [H]:", height=ySpacing)
+        lblLdInd.pack(side="left")   
+        eLdInd=Entry(frLdInd,textvariable=self.ldInd,width=8)
+        eLdInd.bind('<Return>',self.eLdIndCallback)
+        eLdInd.pack(side="left") 
+        eLdInd.pack(fill=X,anchor=E,padx=5) 
+        
+        pw.add(lfLdStd)      
+        
+        lfShtStd = Labelframe(pw,text="Short Standard")
+        lfShtStd.pack(fill=BOTH)
+        
+        frShtRes=Frame(lfShtStd)
+        frShtRes.pack(side="left")
+        lblShtRes=Label(frShtRes, text="Resistance [Ohm]:", height=ySpacing)
+        lblShtRes.pack(side="left")   
+        eShtRes=Entry(frShtRes,textvariable=self.shtRes,width=8)
+        eShtRes.bind('<Return>',self.eShtResCallback)
+        eShtRes.pack(side="left") 
+        eShtRes.pack(fill=X,anchor=E,padx=5) 
+        
+        frShtInd=Frame(lfShtStd)
+        frShtInd.pack(side="left")
+        lblShtInd=Label(frShtInd, text="Inductance [H]:", height=ySpacing)
+        lblShtInd.pack(side="left")   
+        eShtInd=Entry(frShtInd,textvariable=self.shtInd,width=8)
+        eShtInd.bind('<Return>',self.eShtIndCallback)
+        eShtInd.pack(side="left") 
+        eShtInd.pack(fill=X,anchor=E,padx=5) 
+        
+        pw.add(lfShtStd) 
+        
+        btnOk = Button(top,text="Ok",command=top.destroy)
+        btnOk.pack()
         
         
-        self.msgCalibrationtabNetwork = Message(self.calibrationtabNetwork,width=self.imgTransCalib.width())
-        self.msgCalibrationtabNetwork.config(text="Connect a power splitter, and a network as appropriate -- the MEASURE position shown above.")
-        self.msgCalibrationtabNetwork.pack()
         
-        self.btnNextCalibration = Button(self.calibrationtabNetwork,text='Start Calibration',command=self.nextButtonCallback)
-        self.btnNextCalibration.pack()        
-        
-        self.calibStepCounter = 0
-        
+    
         
     def nextButtonCallback(self):
         self.calibStepCounter = self.calibStepCounter +1
@@ -814,6 +953,21 @@ class MainWindow:
         print 'P1 Port Extension = '+self.portExtP1.get()
     def ePortExtP2Callback(self,event):
         print 'P2 Port Extension = '+self.portExtP2.get()
+        
+        
+    def eOpenCondCallback(self,event):
+        print 'OpenCond = '+self.openCond.get()
+    def eOpenCapCallback(self,event):
+        print 'OpenCap = '+self.openCap.get()
+    def eLdResCallback(self,event):
+        print 'LdRes = '+self.ldRes.get()
+    def eLdIndCallback(self,event):
+        print 'LdInd = '+self.ldInd.get()
+    def eShtResCallback(self,event):
+        print 'ShtRes = '+self.shtRes.get()
+    def eShtIndCallback(self,event):
+        print 'ShtInd = '+self.shtInd.get()
+        
             
     def printPortNetwork(self):
         print self.portNetwork.get()
