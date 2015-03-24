@@ -13,9 +13,9 @@ matplotlib.use('TkAgg')
 #import matplotlib
 
 import numpy as np
-
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
 
 #from PIL import Image, ImageTk
 import threading
