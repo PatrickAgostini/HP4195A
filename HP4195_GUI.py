@@ -869,10 +869,6 @@ class MainWindow(threading.Thread):
         btnOk = Button(top,text="Ok",command=top.destroy)
         btnOk.pack()
         
-        
-        
-    
-        
     def nextButtonCallback(self):
         self.calibStepCounter = self.calibStepCounter +1
         if self.calMode == 1:        
