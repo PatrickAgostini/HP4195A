@@ -18,45 +18,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 
 #from PIL import Image, ImageTk
-
-from threading import Thread 
 import threading
-import time
-
-class Worker(Thread):
-
-    def __init__(self, func):
-        self.paused = False
-        Thread.__init__(self)
-        self.func = func
-        #pass
-    def restart(self):
-        self.paused = False
-    
-    def run(self):
-        self.running = True
-        self.paused = False
-        while self.running:
-            if not self.paused:
-                self.func()
-                time.sleep(0.3)
-            
-    def stp(self):
-        self.running = False
-        
-    def pause(self):
-        self.paused = True
-
-class Processor(Thread):
-
-    def __init__(self, w):
-        Thread.__init__(self)
-        self.worker = w
-
-    def run(self):
-            # process data from worker thread, add your logic here
-            self.worker.start()
-
 
 class MainWindow(threading.Thread):
     
@@ -67,11 +29,9 @@ class MainWindow(threading.Thread):
     #def run(self):
         self.root = Tk()
         
-        self.root.resizable(width=False, height=False)
         self.root.wm_title("HP4195A User Interface")
         #self.root.protocol("WM_DELETE_WINDOW", self.destructor)
         self.init()
-        self.root.resizable(width=True, height=True)
         
     def destructor(self):
         #self.worker.stp() 
@@ -80,6 +40,7 @@ class MainWindow(threading.Thread):
         
     def init(self):     
         
+        self.plotInterval = 10        
         
         self.measFuncVar =IntVar()
         self.angleMode =IntVar()
@@ -146,11 +107,7 @@ class MainWindow(threading.Thread):
         self.calibrationtabNetwork=None
         
         self.setMenuBar()
-        self.setTabBar()
-        
-        
-        self.worker    = Worker(self.plot)
-        self.processor = Processor(self.worker)          
+        self.setTabBar()     
         
         #self.setSettingsTabNetwork()
         self.buildSettingsTabNetwork()
@@ -159,19 +116,7 @@ class MainWindow(threading.Thread):
         self.buildCalibrationtabNetwork()
         self.buildReceivertabRest()
         
-        
-        
-        self.maintab.bind("<Configure>",self.resize)  
-        
-        self.show()   
-  #############################################################################      
-  
-    def resize(self,event):
-        #self.worker.pause()
-        self.currentHeight = self.maintab.winfo_height
-        self.currendWidth = self.maintab.winfo_width
-        print "h = " + str(event.height)
-        print "w = " + str(event.width)
+        self.show()
             
             
     ###########################################################################
@@ -435,18 +380,9 @@ class MainWindow(threading.Thread):
         ePortExtP2.pack(side="left")
         frP2.pack()
         ePortExtP2.pack(fill=X,anchor=E,padx=5)
-
-        
         
         pwFull.add(pw1)
         pwFull.add(frPortExt)
-        
-        
-        
-        
-        
-        
-        
         
     def buildStimulustab(self):
         f = Frame(self.stimulustab)
@@ -610,6 +546,12 @@ class MainWindow(threading.Thread):
         
         pwFull.add(frNonSwp)
         
+    def startPlotting(self):
+        if self.plotRun:
+            self.plotThread.start()
+        else:
+            self.plotThread.stop()
+        self.plotRun = not self.plotRun
         
         
     def buildMaintab(self):
@@ -624,7 +566,13 @@ class MainWindow(threading.Thread):
         self.canvas._tkcanvas.config(highlightthickness=2, bd=0, relief=SUNKEN,highlightcolor='grey')
         self.canvas._tkcanvas.pack(anchor=NW,fill=BOTH,expand=1)
         
-        refreshButton = Button(self.maintab,text="Refresh",command=self.refreshCallback)
+        'Periodic Plotting'
+        self.plotThread = self.canvas.new_timer()
+        self.plotThread.add_callback(self.plot)
+        self.plotThread._set_interval(self.plotInterval)
+        self.plotRun = False
+        
+        refreshButton = Button(self.maintab,text="Refresh",command=self.startPlotting)
         refreshButton.pack()
         
         self.ax1.set_axis_bgcolor('black')
@@ -637,11 +585,7 @@ class MainWindow(threading.Thread):
         self.ax2.spines['left'].set_color([.5, .5, .5])
         self.ax2.spines['right'].set_color([.5, .5, .5])
         self.ax1.xaxis.label.set_color([.8, .8, .8])
-        self.ax1.tick_params(axis='x', colors=[.8, .8, .8])
-        
-        self.currentHeight = self.maintab.winfo_height
-        self.currentWidth = self.maintab.winfo_width
-        
+        self.ax1.tick_params(axis='x', colors=[.8, .8, .8])       
         
         self.plot()
         
@@ -720,34 +664,28 @@ class MainWindow(threading.Thread):
         pw2.add(frInputAtt)
         
         
-        
-    def refreshCallback(self):
-        self.processor.start()
-        
     def plot(self):
-        #self.root.resizable(width=False, height=False)
-        #self.root.resizable(width=TRUE, height=TRUE)
-        if self.maintab.winfo_height == self.currentHeight and self.maintab.winfo_width == self.currentWidth:
-            self.setAxesLabels()        
-            
-            t = np.arange(0,400,1)
-            s1 = 20*np.log(np.abs(np.random.randn(np.size(t))))
-            self.ax1.cla()
-            self.ax1.plot(t, s1, 'y')
-            self.ax1.set_xlabel(self.xLbl,fontsize='medium')
-            # Make the y-axis label and tick labels match the line color.
-            self.ax1.set_ylabel(self.yLbl[0], color='y',fontsize='medium')
-            for tl in self.ax1.get_yticklabels():
-                tl.set_color('y')
-            s2 = np.sin(2*np.pi*t/400)+0.1*np.random.randn(np.size(t))
-            
-            self.ax2.cla()
-            self.ax2.plot(t, s2, 'c')
-            self.ax2.set_ylabel(self.yLbl[1], color='c',fontsize='medium')
-            for tl in self.ax2.get_yticklabels():
-                tl.set_color('c')
-            
-            self.canvas.draw()
+        
+        self.setAxesLabels()        
+        t = np.arange(0,400,1)
+        s1 = 20*np.log(np.abs(np.random.randn(np.size(t))))
+        self.ax1.cla()
+        self.ax1.plot(t, s1, 'y')
+        self.ax1.set_xlabel(self.xLbl,fontsize='medium')
+        # Make the y-axis label and tick labels match the line color.
+        self.ax1.set_ylabel(self.yLbl[0], color='y',fontsize='medium')
+        
+        for tl in self.ax1.get_yticklabels():
+            tl.set_color('y')
+        s2 = np.sin(2*np.pi*t/400)+0.1*np.random.randn(np.size(t))
+        
+        self.ax2.cla()
+        self.ax2.plot(t, s2, 'c')
+        self.ax2.set_ylabel(self.yLbl[1], color='c',fontsize='medium')
+        for tl in self.ax2.get_yticklabels():
+            tl.set_color('c')
+        
+        self.canvas.draw()
         
         
     def setAxesLabels(self):
