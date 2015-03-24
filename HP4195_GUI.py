@@ -7,7 +7,7 @@ Created on Fri Mar 13 17:15:22 2015
 
 #from plot2ax import plot2ax
 from Tkinter import *
-from ttk import Notebook, Labelframe
+from ttk import Notebook, Labelframe, Combobox
 
 matplotlib.use('TkAgg')
 #import matplotlib
@@ -88,7 +88,7 @@ class MainWindow(threading.Thread):
         self.ldInd = StringVar()
         self.shtRes = StringVar()
         self.shtInd = StringVar()
-        self.correctn = BooleanVar()
+        #self.correctn = BooleanVar() ##not used anymore
         
         
       
@@ -104,7 +104,7 @@ class MainWindow(threading.Thread):
         self.stimulustab=None
         self.receivertabRest=None
         self.receivertabSpectrum=None
-        self.calibrationtabNetwork=None
+        self.calibrationtab=None
         
         self.setMenuBar()
         self.setTabBar()     
@@ -113,7 +113,7 @@ class MainWindow(threading.Thread):
         self.buildSettingsTabNetwork()
         self.buildStimulustab()
         self.buildMaintab()
-        self.buildCalibrationtabNetwork()
+        self.buildCalibrationtab()
         self.buildReceivertabRest()
         
         self.show()
@@ -162,9 +162,7 @@ class MainWindow(threading.Thread):
         self.stimulustab = Frame(self.note)
         self.receivertabRest = Frame(self.note)
         self.receivertabSpectrum = Frame(self.note)
-        self.calibrationtabNetwork = Frame(self.note)
-        self.calibrationtabImpedance = Frame(self.note)
-        self.calibrationtabS = Frame(self.note)
+        self.calibrationtab = Frame(self.note)
         self.settingstabNetwork = Frame(self.note)
         self.settingstabSpectrum = Frame(self.note)
         self.settingstabImpedance = Frame(self.note)
@@ -178,9 +176,7 @@ class MainWindow(threading.Thread):
         self.note.add(self.stimulustab, text = "Stimulus")
         self.note.add(self.receivertabRest, text = "Receiver")
         self.note.add(self.receivertabSpectrum, text = "Receiver")
-        self.note.add(self.calibrationtabNetwork, text = "Calibration")
-        self.note.add(self.calibrationtabImpedance, text = "Calibration")
-        self.note.add(self.calibrationtabS, text = "Calibration")
+        self.note.add(self.calibrationtab, text = "Calibration")
         self.note.add(self.settingstabNetwork, text = "Settings")
         self.note.add(self.settingstabSpectrum, text = "Settings")
         self.note.add(self.settingstabImpedance, text = "Settings")
@@ -203,59 +199,53 @@ class MainWindow(threading.Thread):
         if self.measFuncVar.get()==1: #Network
             self.note.tab(self.receivertabRest,state = "normal")
             self.note.tab(self.receivertabSpectrum,state = "hidden")
-            self.note.tab(self.calibrationtabNetwork,state = "normal")
-            self.note.tab(self.calibrationtabImpedance, state = "hidden")
-            self.note.tab(self.calibrationtabS, state = "hidden")
+            self.note.tab(self.calibrationtab,state = "normal")
             self.note.tab(self.settingstabNetwork, state = "normal")
             self.note.tab(self.settingstabSpectrum, state = "hidden")
             self.note.tab(self.settingstabImpedance, state = "hidden")
             self.note.tab(self.settingstabS1122, state = "hidden")
             self.note.tab(self.settingstabS2112,state = "hidden")
+           
         elif self.measFuncVar.get()==2: #Spectrum
             self.note.tab(self.receivertabRest,state = "hidden")
             self.note.tab(self.receivertabSpectrum,state = "normal")
-            self.note.tab(self.calibrationtabNetwork,state = "hidden")
-            self.note.tab(self.calibrationtabImpedance, state = "hidden")
-            self.note.tab(self.calibrationtabS, state = "hidden")
+            self.note.tab(self.calibrationtab,state = "hidden")
             self.note.tab(self.settingstabNetwork, state = "hidden")
             self.note.tab(self.settingstabSpectrum, state = "normal")
             self.note.tab(self.settingstabImpedance, state = "hidden")
             self.note.tab(self.settingstabS1122, state = "hidden")
             self.note.tab(self.settingstabS2112,state = "hidden")
+            
         elif self.measFuncVar.get()==3: #Impedance
             self.note.tab(self.receivertabRest,state = "normal")
             self.note.tab(self.receivertabSpectrum,state = "hidden")
-            self.note.tab(self.calibrationtabNetwork,state = "hidden")
-            self.note.tab(self.calibrationtabImpedance, state = "normal")
-            self.note.tab(self.calibrationtabS, state = "hidden")
+            self.note.tab(self.calibrationtab,state = "normal")
             self.note.tab(self.settingstabNetwork, state = "hidden")
             self.note.tab(self.settingstabSpectrum, state = "hidden")
             self.note.tab(self.settingstabImpedance, state = "normal")
             self.note.tab(self.settingstabS1122, state = "hidden")
             self.note.tab(self.settingstabS2112,state = "hidden")
+      
         elif self.measFuncVar.get()==4 or self.measFuncVar.get()==7: #S11 or S21
             self.note.tab(self.receivertabRest,state = "normal")
             self.note.tab(self.receivertabSpectrum,state = "hidden")
-            self.note.tab(self.calibrationtabNetwork,state = "hidden")
-            self.note.tab(self.calibrationtabImpedance, state = "hidden")
-            self.note.tab(self.calibrationtabS, state = "normal")
+            self.note.tab(self.calibrationtab,state = "normal")
             self.note.tab(self.settingstabNetwork, state = "hidden")
             self.note.tab(self.settingstabSpectrum, state = "hidden")
             self.note.tab(self.settingstabImpedance, state = "hidden")
             self.note.tab(self.settingstabS1122, state = "normal")
             self.note.tab(self.settingstabS2112,state = "hidden")
+    
         elif self.measFuncVar.get()==5 or self.measFuncVar.get()==6: #S21 or S12
             self.note.tab(self.receivertabRest,state = "normal")
             self.note.tab(self.receivertabSpectrum,state = "hidden")
-            self.note.tab(self.calibrationtabNetwork,state = "hidden")
-            self.note.tab(self.calibrationtabImpedance, state = "hidden")
-            self.note.tab(self.calibrationtabS, state = "normal")
+            self.note.tab(self.calibrationtab,state = "normal")
             self.note.tab(self.settingstabNetwork, state = "hidden")
             self.note.tab(self.settingstabSpectrum, state = "hidden")
             self.note.tab(self.settingstabImpedance, state = "hidden")
             self.note.tab(self.settingstabS1122, state = "hidden")
             self.note.tab(self.settingstabS2112,state = "normal")
-        
+            
     
         
         
@@ -607,7 +597,8 @@ class MainWindow(threading.Thread):
         pw1.add(frIFRest)
         frResBW = Labelframe(pw1,text="Resolution BW [Hz]",height=100, width=100)
         rbwList = ('Auto',3, 10, 30, 100, 300, 1000, 3000, 10000, 30000, 100000, 300000)
-        self.sbResBW = Spinbox(frResBW,values=rbwList)
+        self.sbResBW = Combobox(frResBW,values=rbwList)
+        self.sbResBW.bind("<<ComboboxSelected>>",self.resBWCallback)
         self.sbResBW.pack()
         frResBW.pack(anchor=W)
         pw1.add(frResBW)
@@ -704,80 +695,115 @@ class MainWindow(threading.Thread):
             self.yLbl = YLABELS[self.formatNetwork.get()-1]
             self.ax2.patch.set_visible(False)
             self.canvas.show()
-            
-## Old Version of CalibrationtabNetwork   
-#    def buildCalibrationtabNetwork(self):
-#        frCalMode = Frame(self.calibrationtabNetwork)
-#        frCalMode.pack()
-#        CALMODES = [("Transmission",1),
-#                    ("Reflection",2)]    
-#        for text, mode in CALMODES:
-#            self.rbCalMode = Radiobutton (frCalMode,text=text,variable = self.calMode,value = mode,command = self.calModeCallback)
-#            self.rbCalMode.pack(side="left")
-#        self.calMode.set(1)
-#        
-#        
-#        imgTransCalibPath = "./Images/TransmissionCalibrationDiagram.gif"
-#        imgReflCalibPath = "./Images/ReflectionCalibrationDiagram.gif"
-#        self.imgTransCalib = PhotoImage(file=imgTransCalibPath)
-#        self.imgReflCalib = PhotoImage(file=imgReflCalibPath)
-#        self.imgCalibLbl = Label(self.calibrationtabNetwork,image=self.imgTransCalib)
-#        self.imgCalibLbl.pack()
-#        
-#        frCalCbtn = Frame(self.calibrationtabNetwork)
-#        frCalCbtn.pack()
-#        self.cbtnIsncalNetwork=Checkbutton(frCalCbtn,variable=self.checkIsncalNetwork,text="Perform Isolation Calibration")
-#        self.checkIsncalNetwork.set(True)        
-#        self.cbtnIsncalNetwork.pack(side="left")
-#        
-#        self.cbtnShortNetwork=Checkbutton(frCalCbtn,variable=self.checkShortNetwork,text="Perform Short Calibration")
-#        self.checkShortNetwork.set(True)        
-#        # don't pack yet
-#        
-#        
-#        self.msgCalibrationtabNetwork = Message(self.calibrationtabNetwork,width=self.imgTransCalib.width())
-#        self.msgCalibrationtabNetwork.config(text="Connect a power splitter, and a network as appropriate -- the MEASURE position shown above.")
-#        self.msgCalibrationtabNetwork.pack()
-#        
-#        self.btnNextCalibration = Button(self.calibrationtabNetwork,text='Start Calibration',command=self.nextButtonCallback)
-#        self.btnNextCalibration.pack()        
-#        
-#        self.calibStepCounter = 0
-#        
+ 
     
-    def buildCalibrationtabNetwork(self):
-        frCalMode = Frame(self.calibrationtabNetwork)
-        frCalMode.pack()
-        CALMODES = [("Transmission",1),
-                    ("Reflection",2)]    
-        for text, mode in CALMODES:
-            self.rbCalMode = Radiobutton (frCalMode,text=text,variable = self.calMode,value = mode,command = self.calModeCallback)
-            self.rbCalMode.pack(side="left")
-        self.calMode.set(1)
-        
-        
+    def buildCalibrationtab(self):
+        # Load Images
         imgTransCalibPath = "./Images/TransmissionCalibrationDiagram.gif"
         imgReflCalibPath = "./Images/ReflectionCalibrationDiagram.gif"
         self.imgTransCalib = PhotoImage(file=imgTransCalibPath)
-        self.imgReflCalib = PhotoImage(file=imgReflCalibPath)
-        self.imgCalibLbl = Label(self.calibrationtabNetwork,image=self.imgTransCalib)
+        self.imgReflCalib = PhotoImage(file=imgReflCalibPath)        
+        
+        #################################################
+        superFrCalMode = Frame(self.calibrationtab)
+        superFrCalMode.pack(fill=BOTH,expand=1)
+        self.frCalMode = Frame(superFrCalMode)
+        self.frCalMode.pack()
+        CALMODES = [("Transmission",1),
+                    ("Reflection",2)]    
+        for text, mode in CALMODES:
+            self.rbCalMode = Radiobutton (self.frCalMode,text=text,variable = self.calMode,value = mode,command = self.calModeCallback)
+            self.rbCalMode.pack(side="left")
+        self.calMode.set(1)
+        
+        frPwCalib = Frame(self.calibrationtab)
+        frPwCalib.pack(fill=BOTH,expand=1)
+        
+        ######### Transmission Calibration #############
+        self.pwTransCalib = PanedWindow(frPwCalib,orient=HORIZONTAL)
+        self.pwTransCalib.pack()
+        
+        frLeft = Frame(self.pwTransCalib)
+        frLeft.pack(fill=BOTH,expand=1)
+        self.imgCalibLbl = Label(frLeft,image=self.imgTransCalib,relief = SUNKEN)
         self.imgCalibLbl.pack()
         
-        msg = Message(self.calibrationtabNetwork,text="Select stimulus and receiver settings before starting the calibration.",width=self.imgTransCalib.width())
-        msg.pack()
         
-        self.frTransBtns = Labelframe(self.calibrationtabNetwork, text="Calibration Setup")
-        self.frTransBtns.pack()
-        self.btnIso  = Button(self.frTransBtns,text="Isolation Calibration")
-        self.btnIso.pack(side="left", padx=5, pady=5)
-        self.btnThr  = Button(self.frTransBtns,text="Through Calibration")
-        self.btnThr.pack(side="left",padx=5, pady=5)
-        self.btnCor  = Checkbutton(self.frTransBtns,text="Correction", variable = self.correctn)
-        self.correctn.set(True)
-        self.btnCor.pack(side="left",padx=5, pady=5)
         
-        self.btnCalibSettings = Button(self.frTransBtns,text="Settings",command=self.calibSettingsCallback)
-        self.btnCalibSettings.pack(side="left",padx=5, pady=5)        
+        self.pwTransCalib.add(frLeft)
+        
+       
+        
+        frRight = Labelframe(self.pwTransCalib, text="Calibration Setup")
+        frRight.pack(fill=BOTH,expand=1)
+        self.btnIso  = Button(frRight,text="Isolation")
+        self.btnIso.pack(side="top", padx=5, pady=5)
+        self.btnThr  = Button(frRight,text="Through")
+        self.btnThr.pack(side="top",padx=5, pady=5)
+       
+        
+        self.pwTransCalib.add(frRight)
+        
+        ######### Reflection Calibration #############
+        
+        self.pwReflCalib = PanedWindow(frPwCalib,orient=HORIZONTAL)
+        ## Don't pack yet
+        
+        frLeft = Frame(self.pwReflCalib)
+        frLeft.pack(fill=BOTH,expand=1)
+        self.imgCalibLbl = Label(frLeft,image=self.imgReflCalib,relief = SUNKEN)
+        self.imgCalibLbl.pack()
+        
+        
+        self.pwReflCalib.add(frLeft)
+        
+        
+        frRight = Labelframe(self.pwReflCalib, text="Calibration Setup")
+        frRight.pack(fill=BOTH,expand=1)
+        self.btnOpn  = Button(frRight,text="Open")
+        self.btnOpn.pack(side="top", padx=5, pady=5)
+        self.btnLd  = Button(frRight,text="Load")
+        self.btnLd.pack(side="top",padx=5, pady=5)
+        self.btnSht  = Button(frRight,text="Short")
+        self.btnSht.pack(side="top", padx=5, pady=5)
+
+        
+        
+        self.pwReflCalib.add(frRight)
+        
+        #### Bottom of Calibrationtab ####
+        
+        msg = Message(self.calibrationtab,text="Select stimulus and receiver settings before starting the calibration.",width=self.imgTransCalib.width())
+        msg.pack(side="left")
+        self.btnCalibSettings = Button(self.calibrationtab,text="Settings",command=self.calibSettingsCallback)
+        self.btnCalibSettings.pack(side="right",padx=15, pady=15)        
+    
+    def setCalibrationTab(self):
+        if self.measFuncVar.get() == 1:
+            if not self.frCalMode.winfo_ismapped():
+                self.frCalMode.pack()
+                self.calMode.set(1)
+            self.calModeCallback()
+        elif self.measFuncVar.get() in (5,6):
+            self.frCalMode.pack_forget()
+            self.calMode.set(1)
+            self.calModeCallback()
+        elif self.measFuncVar.get() in (3,4,7):
+            self.frCalMode.pack_forget()
+                
+            self.calMode.set(2)
+            self.calModeCallback()
+    
+    def calModeCallback(self):    
+        if self.calMode.get() == 1:
+            if not self.pwTransCalib.winfo_ismapped():
+                self.pwTransCalib.pack()
+            self.pwReflCalib.pack_forget()
+        else:
+            if not self.pwReflCalib.winfo_ismapped():
+                self.pwReflCalib.pack()
+            self.pwTransCalib.pack_forget()
+            
         
     def calibSettingsCallback(self):
         ySpacing = 2
@@ -869,60 +895,8 @@ class MainWindow(threading.Thread):
         btnOk = Button(top,text="Ok",command=top.destroy)
         btnOk.pack()
         
-    def nextButtonCallback(self):
-        self.calibStepCounter = self.calibStepCounter +1
-        if self.calMode == 1:        
-            if self.checkIsncalNetwork.get()==False and self.calibStepCounter == 1:
-                self.calibStepCounter = self.calibStepCounter +1 #Skip ISNCAL
-            if self.calibStepCounter == 1:
-                 self.msgCalibrationtabNetwork.config(text="Terminate the source signal with an impedance matched load, and disconnect the network under test from the setup, leave the test channel open -- the ISOLATE position shown above.")
-                 self.btnNextCalibration.config(text="Next")
-            elif self.calibStepCounter == 2:
-                self.msgCalibrationtabNetwork.config(text="Short circuit the test cables to make a through connection -- the THROUGH position shown above.")
-                self.btnNextCalibration.config(text="Next")
-            elif self.calibStepCounter == 3:
-                self.msgCalibrationtabNetwork.config(text="Connect the network under test as appropriate for the selected measurement -- the MEASURE position shown above.")
-                self.btnNextCalibration.config(text="Next")
-            elif self.calibStepCounter == 4:
-                self.msgCalibrationtabNetwork.config(text="Connect a power splitter, and a network as appropriate -- the MEASURE position shown above.")
-                self.btnNextCalibration.config(text="Start Calibration")            
-                self.calibStepCounter = 0
-        else:
-            if self.calibStepCounter == 1:
-                self.msgCalibrationtabNetwork.config(text="Select the 4195A's stimulus and receiver settings as appropriate for the measurement.")
-                self.btnNextCalibration.config(text="Next")   
-            elif self.calibStepCounter ==2:
-                top = Toplevel(self.root)
-                top.title("Select Z0")
-                
-                msg = Message(top,text="Select the Characteristic Impedance", width=150) 
-                msg.pack()
-                
-                Z0 = [('50 Ohm',1),('75 Ohm',2)]
-                for text, mode in Z0:
-                    rbZ0 = Radiobutton(top,text=text, value=mode,variable=self.charImp)
-                    rbZ0.pack(anchor=W)
-                self.charImp.set(1)
-                
-                btnOk = Button(top,text="Ok",command=top.destroy)
-                btnOk.pack()
-                
-    
 
-    def calModeCallback(self):
-        if self.calMode.get() == 1:
-            self.imgCalibLbl.config(image=self.imgTransCalib)
-            self.cbtnShortNetwork.pack_forget()
-            self.calibStepCounter = 0
-            self.btnNextCalibration.config(text="Start Calibration") 
-            self.msgCalibrationtabNetwork.config(text="Connect a power splitter, and a network as appropriate -- the MEASURE position shown above.")
-        else:
-            self.imgCalibLbl.config(image=self.imgReflCalib)
-            self.cbtnShortNetwork.pack(side="left")
-            self.calibStepCounter = 0
-            self.btnNextCalibration.config(text="Start Calibration")  
-            self.msgCalibrationtabNetwork.config(text="Connect a directional bridge, a power splitter, and the network under test as appropriate for the selected measurement -- the DUT position shown above.")
-        
+    
 
 
     def eStartCallback(self,event):
@@ -982,7 +956,9 @@ class MainWindow(threading.Thread):
     def eShtIndCallback(self,event):
         print 'ShtInd = '+self.shtInd.get()
         
-            
+    def resBWCallback(self,event):
+        print(self.sbResBW.current())     
+    
     def printPortNetwork(self):
         print self.portNetwork.get()
         
@@ -991,6 +967,7 @@ class MainWindow(threading.Thread):
     def measFuncCall(self):
             print'FNC'+str(self.measFuncVar.get())
             self.setActiveTabs()
+            self.setCalibrationTab()
             
     def hello(self):
         print "hello"
