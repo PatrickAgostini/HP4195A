@@ -547,7 +547,7 @@ class MainWindow(threading.Thread):
         pwFull.add(frNonSwp)
         
     def startPlotting(self):
-        if self.plotRun:
+        if not self.plotRun:
             self.plotThread.start()
         else:
             self.plotThread.stop()
