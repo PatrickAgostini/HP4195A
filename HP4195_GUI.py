@@ -6,8 +6,6 @@ Created on Fri Mar 13 17:15:22 2015
 """
 
 #from plot2ax import plot2ax
-
-
 from Tkinter import *
 from ttk import Notebook, Labelframe
 
@@ -21,11 +19,56 @@ import matplotlib.pyplot as plt
 
 #from PIL import Image, ImageTk
 
-class MainWindow:
+from threading import Thread 
+import threading
+import time
+
+class Worker(Thread):
+
+    def __init__(self, func):
+        Thread.__init__(self)
+        self.func = func
+        #pass
+
+    def run(self):
+        self.running = True
+        while self.running:
+            self.func()
+            time.sleep(0.004)
+            
+    def stp(self):
+        self.running = False
+
+class Processor(Thread):
+
+    def __init__(self, w):
+        Thread.__init__(self)
+        self.worker = w
+
+    def run(self):
+            # process data from worker thread, add your logic here
+            self.worker.start()
+
+
+class MainWindow(threading.Thread):
     
-    def __init__(self): 
+    def __init__(self):       
+        threading.Thread.__init__(self)
+        self.start()
+        
+    def run(self):
         self.root = Tk()
         self.root.wm_title("HP4195A User Interface")
+        self.root.protocol("WM_DELETE_WINDOW", self.destructor)
+        self.init()
+        
+    def destructor(self):
+        self.worker.stp() 
+        self.root.quit()
+        print("finished")
+        
+    def init(self):     
+        
         
         self.measFuncVar =IntVar()
         self.angleMode =IntVar()
@@ -93,6 +136,10 @@ class MainWindow:
         self.setMenuBar()
         self.setTabBar()
         
+        
+        self.worker    = Worker(self.plot)
+        self.processor = Processor(self.worker)          
+        
         #self.setSettingsTabNetwork()
         self.buildSettingsTabNetwork()
         self.buildStimulustab()
@@ -100,8 +147,7 @@ class MainWindow:
         self.buildCalibrationtabNetwork()
         self.buildReceivertabRest()
         
-     
-
+        self.show()   
     ###########################################################################
     # Menu Bar
     def setMenuBar(self):
@@ -567,7 +613,7 @@ class MainWindow:
         self.ax1.xaxis.label.set_color([.8, .8, .8])
         self.ax1.tick_params(axis='x', colors=[.8, .8, .8])
         
-        self.refreshCallback()
+        self.plot()
         
     def buildReceivertabRest(self):
         pw2 = PanedWindow(self.receivertabRest,orient=VERTICAL)
@@ -646,8 +692,9 @@ class MainWindow:
         
         
     def refreshCallback(self):
-
+        self.processor.start()
         
+    def plot(self):
         self.setAxesLabels()        
         
         t = np.arange(0,400,1)
@@ -985,6 +1032,8 @@ class MainWindow:
         self.root.mainloop()
       
 
+###############################################################################
+
 mw = MainWindow()
-mw.show()
+
         
