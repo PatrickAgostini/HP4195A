@@ -26,18 +26,26 @@ import time
 class Worker(Thread):
 
     def __init__(self, func):
+        self.paused = False
         Thread.__init__(self)
         self.func = func
         #pass
-
+    def restart(self):
+        self.paused = False
+    
     def run(self):
         self.running = True
+        self.paused = False
         while self.running:
-            self.func()
-            time.sleep(0.004)
+            if not self.paused:
+                self.func()
+                time.sleep(0.3)
             
     def stp(self):
         self.running = False
+        
+    def pause(self):
+        self.paused = True
 
 class Processor(Thread):
 
@@ -53,17 +61,20 @@ class Processor(Thread):
 class MainWindow(threading.Thread):
     
     def __init__(self):       
-        threading.Thread.__init__(self)
-        self.start()
+        #threading.Thread.__init__(self)
+        #self.start()
         
-    def run(self):
+    #def run(self):
         self.root = Tk()
+        
+        self.root.resizable(width=False, height=False)
         self.root.wm_title("HP4195A User Interface")
-        self.root.protocol("WM_DELETE_WINDOW", self.destructor)
+        #self.root.protocol("WM_DELETE_WINDOW", self.destructor)
         self.init()
+        self.root.resizable(width=True, height=True)
         
     def destructor(self):
-        self.worker.stp() 
+        #self.worker.stp() 
         self.root.quit()
         print("finished")
         
@@ -118,6 +129,7 @@ class MainWindow(threading.Thread):
         self.shtInd = StringVar()
         self.correctn = BooleanVar()
         
+        
       
         ###### plot #########
         self.xLbl = ''
@@ -147,7 +159,21 @@ class MainWindow(threading.Thread):
         self.buildCalibrationtabNetwork()
         self.buildReceivertabRest()
         
+        
+        
+        self.maintab.bind("<Configure>",self.resize)  
+        
         self.show()   
+  #############################################################################      
+  
+    def resize(self,event):
+        #self.worker.pause()
+        self.currentHeight = self.maintab.winfo_height
+        self.currendWidth = self.maintab.winfo_width
+        print "h = " + str(event.height)
+        print "w = " + str(event.width)
+            
+            
     ###########################################################################
     # Menu Bar
     def setMenuBar(self):
@@ -613,6 +639,10 @@ class MainWindow(threading.Thread):
         self.ax1.xaxis.label.set_color([.8, .8, .8])
         self.ax1.tick_params(axis='x', colors=[.8, .8, .8])
         
+        self.currentHeight = self.maintab.winfo_height
+        self.currentWidth = self.maintab.winfo_width
+        
+        
         self.plot()
         
     def buildReceivertabRest(self):
@@ -695,26 +725,29 @@ class MainWindow(threading.Thread):
         self.processor.start()
         
     def plot(self):
-        self.setAxesLabels()        
-        
-        t = np.arange(0,400,1)
-        s1 = 20*np.log(np.abs(np.random.randn(np.size(t))))
-        self.ax1.cla()
-        self.ax1.plot(t, s1, 'y')
-        self.ax1.set_xlabel(self.xLbl,fontsize='medium')
-        # Make the y-axis label and tick labels match the line color.
-        self.ax1.set_ylabel(self.yLbl[0], color='y',fontsize='medium')
-        for tl in self.ax1.get_yticklabels():
-            tl.set_color('y')
-        s2 = np.sin(2*np.pi*t/400)+0.1*np.random.randn(np.size(t))
-        
-        self.ax2.cla()
-        self.ax2.plot(t, s2, 'c')
-        self.ax2.set_ylabel(self.yLbl[1], color='c',fontsize='medium')
-        for tl in self.ax2.get_yticklabels():
-            tl.set_color('c')
-        
-        self.canvas.draw()
+        #self.root.resizable(width=False, height=False)
+        #self.root.resizable(width=TRUE, height=TRUE)
+        if self.maintab.winfo_height == self.currentHeight and self.maintab.winfo_width == self.currentWidth:
+            self.setAxesLabels()        
+            
+            t = np.arange(0,400,1)
+            s1 = 20*np.log(np.abs(np.random.randn(np.size(t))))
+            self.ax1.cla()
+            self.ax1.plot(t, s1, 'y')
+            self.ax1.set_xlabel(self.xLbl,fontsize='medium')
+            # Make the y-axis label and tick labels match the line color.
+            self.ax1.set_ylabel(self.yLbl[0], color='y',fontsize='medium')
+            for tl in self.ax1.get_yticklabels():
+                tl.set_color('y')
+            s2 = np.sin(2*np.pi*t/400)+0.1*np.random.randn(np.size(t))
+            
+            self.ax2.cla()
+            self.ax2.plot(t, s2, 'c')
+            self.ax2.set_ylabel(self.yLbl[1], color='c',fontsize='medium')
+            for tl in self.ax2.get_yticklabels():
+                tl.set_color('c')
+            
+            self.canvas.draw()
         
         
     def setAxesLabels(self):
