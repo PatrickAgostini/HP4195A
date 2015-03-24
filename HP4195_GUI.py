@@ -62,7 +62,7 @@ class MainWindow(threading.Thread):
         self.osc1LvlStr = StringVar()
         self.osc2LvlStr = StringVar()
         self.triggerMode = StringVar()
-        self.iFModeRest = IntVar()
+        self.iFMode = IntVar()
         self.inpAttR1 = StringVar()
         self.inpAttR2 = StringVar()
         self.inpAttT1 = StringVar()
@@ -74,6 +74,7 @@ class MainWindow(threading.Thread):
         self.portExtP1 = StringVar()
         self.portExtP2 = StringVar()
         self.calMode = IntVar()
+        self.resBW = StringVar()
         
         
         self.checkIsncalNetwork = BooleanVar()
@@ -102,8 +103,7 @@ class MainWindow(threading.Thread):
         
         self.maintab=None
         self.stimulustab=None
-        self.receivertabRest=None
-        self.receivertabSpectrum=None
+        self.receivertab=None
         self.calibrationtab=None
         
         self.setMenuBar()
@@ -114,7 +114,7 @@ class MainWindow(threading.Thread):
         self.buildStimulustab()
         self.buildMaintab()
         self.buildCalibrationtab()
-        self.buildReceivertabRest()
+        self.buildReceivertab()
         
         self.show()
             
@@ -147,7 +147,6 @@ class MainWindow(threading.Thread):
         self.measFuncVar.set(1)
         menubar.add_cascade(label="Measurement Function", menu=measfuncmenu)
          
-       
         
         # display the menu
         self.root.config(menu=menubar)
@@ -160,8 +159,7 @@ class MainWindow(threading.Thread):
         
         self.maintab = Frame(self.note)
         self.stimulustab = Frame(self.note)
-        self.receivertabRest = Frame(self.note)
-        self.receivertabSpectrum = Frame(self.note)
+        self.receivertab = Frame(self.note)
         self.calibrationtab = Frame(self.note)
         self.settingstabNetwork = Frame(self.note)
         self.settingstabSpectrum = Frame(self.note)
@@ -174,8 +172,7 @@ class MainWindow(threading.Thread):
         
         self.note.add(self.maintab, text = "Main", compound=TOP)
         self.note.add(self.stimulustab, text = "Stimulus")
-        self.note.add(self.receivertabRest, text = "Receiver")
-        self.note.add(self.receivertabSpectrum, text = "Receiver")
+        self.note.add(self.receivertab, text = "Receiver")
         self.note.add(self.calibrationtab, text = "Calibration")
         self.note.add(self.settingstabNetwork, text = "Settings")
         self.note.add(self.settingstabSpectrum, text = "Settings")
@@ -195,10 +192,10 @@ class MainWindow(threading.Thread):
     def setActiveTabs(self):
         self.note.tab(self.maintab,state = "normal") 
         self.note.tab(self.stimulustab,state = "normal") 
+        self.note.tab(self.receivertab,state = "normal")
         
         if self.measFuncVar.get()==1: #Network
-            self.note.tab(self.receivertabRest,state = "normal")
-            self.note.tab(self.receivertabSpectrum,state = "hidden")
+            
             self.note.tab(self.calibrationtab,state = "normal")
             self.note.tab(self.settingstabNetwork, state = "normal")
             self.note.tab(self.settingstabSpectrum, state = "hidden")
@@ -207,8 +204,6 @@ class MainWindow(threading.Thread):
             self.note.tab(self.settingstabS2112,state = "hidden")
            
         elif self.measFuncVar.get()==2: #Spectrum
-            self.note.tab(self.receivertabRest,state = "hidden")
-            self.note.tab(self.receivertabSpectrum,state = "normal")
             self.note.tab(self.calibrationtab,state = "hidden")
             self.note.tab(self.settingstabNetwork, state = "hidden")
             self.note.tab(self.settingstabSpectrum, state = "normal")
@@ -217,8 +212,6 @@ class MainWindow(threading.Thread):
             self.note.tab(self.settingstabS2112,state = "hidden")
             
         elif self.measFuncVar.get()==3: #Impedance
-            self.note.tab(self.receivertabRest,state = "normal")
-            self.note.tab(self.receivertabSpectrum,state = "hidden")
             self.note.tab(self.calibrationtab,state = "normal")
             self.note.tab(self.settingstabNetwork, state = "hidden")
             self.note.tab(self.settingstabSpectrum, state = "hidden")
@@ -227,8 +220,6 @@ class MainWindow(threading.Thread):
             self.note.tab(self.settingstabS2112,state = "hidden")
       
         elif self.measFuncVar.get()==4 or self.measFuncVar.get()==7: #S11 or S21
-            self.note.tab(self.receivertabRest,state = "normal")
-            self.note.tab(self.receivertabSpectrum,state = "hidden")
             self.note.tab(self.calibrationtab,state = "normal")
             self.note.tab(self.settingstabNetwork, state = "hidden")
             self.note.tab(self.settingstabSpectrum, state = "hidden")
@@ -237,8 +228,6 @@ class MainWindow(threading.Thread):
             self.note.tab(self.settingstabS2112,state = "hidden")
     
         elif self.measFuncVar.get()==5 or self.measFuncVar.get()==6: #S21 or S12
-            self.note.tab(self.receivertabRest,state = "normal")
-            self.note.tab(self.receivertabSpectrum,state = "hidden")
             self.note.tab(self.calibrationtab,state = "normal")
             self.note.tab(self.settingstabNetwork, state = "hidden")
             self.note.tab(self.settingstabSpectrum, state = "hidden")
@@ -579,30 +568,51 @@ class MainWindow(threading.Thread):
         
         self.plot()
         
-    def buildReceivertabRest(self):
-        pw2 = PanedWindow(self.receivertabRest,orient=VERTICAL)
+    def buildReceivertab(self):
+        pw2 = PanedWindow(self.receivertab,orient=VERTICAL)
         pw2.pack(fill=BOTH,expand=1)
-        pw1 = PanedWindow(pw2,orient = HORIZONTAL)
-        pw1.pack(fill=BOTH,expand=1)
-        frIFRest = Labelframe(pw1,text="IF Mode", width=100,height=100)
+        self.pwRec1 = PanedWindow(pw2,orient = HORIZONTAL)
+        self.pwRec1.pack(fill=BOTH,expand=1)
+        
+        frIF = Labelframe(self.pwRec1,text="IF Mode", width=100,height=100)
+        frIF.pack(fill=BOTH,expand=1)
+        ####### IF Mode Rest ##############
+        self.frIFRest = Frame(frIF)
+        self.frIFRest.pack()
         IFMODES = [
                 ('Normal' , 1),
                 ('Low Distortion', 2),
                 ('High Sensitivity', 3)
         ]
         for text, mode in IFMODES:
-            self.rbIFRest = Radiobutton(frIFRest,variable = self.iFModeRest, text=text,value=mode)
+            self.rbIFRest = Radiobutton(self.frIFRest,variable = self.iFMode, text=text,value=mode)
             self.rbIFRest.pack(anchor=W)
-        self.iFModeRest.set(1)
-        pw1.add(frIFRest)
-        frResBW = Labelframe(pw1,text="Resolution BW [Hz]",height=100, width=100)
+        self.iFMode.set(1)
+        
+        
+        ####### IF Mode Spectrum ##############
+        self.frIFSpec = Frame(frIF)
+        #don't pack yet
+        IFMODES = [
+                ('Normal' , 1),
+                ('High Sensitivity', 2)
+        ]
+        for text, mode in IFMODES:
+            self.rbIFSpec = Radiobutton(self.frIFSpec,variable = self.iFMode, text=text,value=mode)
+            self.rbIFSpec.pack(anchor=W)
+        self.pwRec1.add(frIF)
+        #self.frIFSpec.pack_forget()
+        
+        
+        frResBW = Labelframe(self.pwRec1,text="Resolution BW [Hz]",height=100, width=100)
         rbwList = ('Auto',3, 10, 30, 100, 300, 1000, 3000, 10000, 30000, 100000, 300000)
-        self.sbResBW = Combobox(frResBW,values=rbwList)
+        self.sbResBW = Combobox(frResBW,values=rbwList, textvariable = self.resBW)
+        self.resBW.set('Auto')
         self.sbResBW.bind("<<ComboboxSelected>>",self.resBWCallback)
         self.sbResBW.pack()
         frResBW.pack(anchor=W)
-        pw1.add(frResBW)
-        pw2.add(pw1)
+        self.pwRec1.add(frResBW)
+        pw2.add(self.pwRec1)
         
         ySpacing = 2
         
@@ -653,6 +663,16 @@ class MainWindow(threading.Thread):
         
         
         pw2.add(frInputAtt)
+        
+    def setReceiverTab(self):
+        if self.measFuncVar.get() == 2:
+            if not self.frIFSpec.winfo_ismapped():
+                self.frIFSpec.pack()
+            self.frIFRest.pack_forget()
+        else:
+            if not self.frIFRest.winfo_ismapped():
+                self.frIFRest.pack()
+            self.frIFSpec.pack_forget()
         
         
     def plot(self):
@@ -968,6 +988,7 @@ class MainWindow(threading.Thread):
             print'FNC'+str(self.measFuncVar.get())
             self.setActiveTabs()
             self.setCalibrationTab()
+            self.setReceiverTab()
             
     def hello(self):
         print "hello"
