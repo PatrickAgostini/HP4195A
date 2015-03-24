@@ -91,8 +91,7 @@ class MainWindow(threading.Thread):
         self.shtInd = StringVar()
         #self.correctn = BooleanVar() ##not used anymore
         
-        
-      
+
         ###### plot #########
         self.xLbl = ''
         self.yLbl = '' #will contain up to 2 Strings depending on measFuncVar
@@ -125,7 +124,7 @@ class MainWindow(threading.Thread):
         menubar = Menu(self.root)
         # File-Menu
         filemenu = Menu(menubar, tearoff=0)
-        filemenu.add_command(label="Save", command=self.hello)
+        filemenu.add_command(label="Save")
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=self.root.quit)
         menubar.add_cascade(label="File", menu=filemenu)
@@ -188,7 +187,8 @@ class MainWindow(threading.Thread):
         
         
     
-        
+    ###########################################################################
+    # Set active Tabs
     def setActiveTabs(self):
         self.note.tab(self.maintab,state = "normal") 
         self.note.tab(self.stimulustab,state = "normal") 
@@ -236,8 +236,9 @@ class MainWindow(threading.Thread):
             self.note.tab(self.settingstabS2112,state = "normal")
             
     
-        
-        
+    ###########################################################################
+    # Build Settings Tabs
+    
     def buildSettingsTabNetwork(self):
         pwFull = PanedWindow(self.settingstabNetwork,orient=VERTICAL)
         pwFull.pack(fill=BOTH,expand=1)
@@ -363,6 +364,8 @@ class MainWindow(threading.Thread):
         pwFull.add(pw1)
         pwFull.add(frPortExt)
         
+    ###########################################################################
+    # Build Stimulus Tab
     def buildStimulustab(self):
         f = Frame(self.stimulustab)
         f.pack(fill=BOTH,expand=1)
@@ -525,14 +528,10 @@ class MainWindow(threading.Thread):
         
         pwFull.add(frNonSwp)
         
-    def startPlotting(self):
-        if not self.plotRun:
-            self.plotThread.start()
-        else:
-            self.plotThread.stop()
-        self.plotRun = not self.plotRun
+
         
-        
+    ###########################################################################
+    #  Build Main Tab  
     def buildMaintab(self):
         self.fig = plt.figure()
         
@@ -551,8 +550,8 @@ class MainWindow(threading.Thread):
         self.plotThread._set_interval(self.plotInterval)
         self.plotRun = False
         
-        refreshButton = Button(self.maintab,text="Refresh",command=self.startPlotting)
-        refreshButton.pack()
+        self.btnStartStop = Button(self.maintab,text="Run",command=self.startPlotting)
+        self.btnStartStop.pack()
         
         self.ax1.set_axis_bgcolor('black')
         self.ax2.set_axis_bgcolor('none')
@@ -567,7 +566,9 @@ class MainWindow(threading.Thread):
         self.ax1.tick_params(axis='x', colors=[.8, .8, .8])       
         
         self.plot()
-        
+    
+    ###########################################################################
+    #  Build Receiver Tab
     def buildReceivertab(self):
         pw2 = PanedWindow(self.receivertab,orient=VERTICAL)
         pw2.pack(fill=BOTH,expand=1)
@@ -590,7 +591,7 @@ class MainWindow(threading.Thread):
         self.iFMode.set(1)
         
         
-        ####### IF Mode Spectrum ##############
+        ####### IF Mode Spectrum #############
         self.frIFSpec = Frame(frIF)
         #don't pack yet
         IFMODES = [
@@ -659,11 +660,12 @@ class MainWindow(threading.Thread):
         eT2.pack(side="left")
         frT2.pack()
         eT2.pack(fill=X,anchor=E,padx=5)
-        
-        
+
         
         pw2.add(frInputAtt)
         
+    ###########################################################################
+    #  Update Receiver Tab 
     def setReceiverTab(self):
         if self.measFuncVar.get() == 2:
             if not self.frIFSpec.winfo_ismapped():
@@ -673,50 +675,8 @@ class MainWindow(threading.Thread):
             if not self.frIFRest.winfo_ismapped():
                 self.frIFRest.pack()
             self.frIFSpec.pack_forget()
-        
-        
-    def plot(self):
-        
-        self.setAxesLabels()        
-        t = np.arange(0,400,1)
-        s1 = 20*np.log(np.abs(np.random.randn(np.size(t))))
-        self.ax1.cla()
-        self.ax1.plot(t, s1, 'y')
-        self.ax1.set_xlabel(self.xLbl,fontsize='medium')
-        # Make the y-axis label and tick labels match the line color.
-        self.ax1.set_ylabel(self.yLbl[0], color='y',fontsize='medium')
-        
-        for tl in self.ax1.get_yticklabels():
-            tl.set_color('y')
-        s2 = np.sin(2*np.pi*t/400)+0.1*np.random.randn(np.size(t))
-        
-        self.ax2.cla()
-        self.ax2.plot(t, s2, 'c')
-        self.ax2.set_ylabel(self.yLbl[1], color='c',fontsize='medium')
-        for tl in self.ax2.get_yticklabels():
-            tl.set_color('c')
-        
-        self.canvas.draw()
-        
-        
-    def setAxesLabels(self):
-        XLABELS = ('Frequency [Hz]',
-            'DC Bias [V]',
-            'Osc Lvl [V]',
-            'Osc Lvl [dBm]',
-            r'Osc Lvl [dB$\mu$V]')
-        self.xLbl = XLABELS[self.sweepParameter.get()-1] #Radiobutton counts from 1, Python counts from 0
-        angleStr = ('[deg]','[rad]')[self.angleMode.get()-1]
-        if self.measFuncVar.get() == 1:
-            YLABELS= [('Gain [dB]','Phase '+angleStr),
-            ('Gain','Phase '+angleStr),
-            ('Re {Gain}','Im {Gain}'),
-            ('Gain [dB]','Group Delay')]
-            self.yLbl = YLABELS[self.formatNetwork.get()-1]
-            self.ax2.patch.set_visible(False)
-            self.canvas.show()
- 
-    
+    ###########################################################################
+    # Build Calibration Tab
     def buildCalibrationtab(self):
         # Load Images
         imgTransCalibPath = "./Images/TransmissionCalibrationDiagram.gif"
@@ -748,11 +708,7 @@ class MainWindow(threading.Thread):
         self.imgCalibLbl = Label(frLeft,image=self.imgTransCalib,relief = SUNKEN)
         self.imgCalibLbl.pack()
         
-        
-        
         self.pwTransCalib.add(frLeft)
-        
-       
         
         frRight = Labelframe(self.pwTransCalib, text="Calibration Setup")
         frRight.pack(fill=BOTH,expand=1)
@@ -760,8 +716,7 @@ class MainWindow(threading.Thread):
         self.btnIso.pack(side="top", padx=5, pady=5)
         self.btnThr  = Button(frRight,text="Through")
         self.btnThr.pack(side="top",padx=5, pady=5)
-       
-        
+           
         self.pwTransCalib.add(frRight)
         
         ######### Reflection Calibration #############
@@ -798,6 +753,8 @@ class MainWindow(threading.Thread):
         self.btnCalibSettings = Button(self.calibrationtab,text="Settings",command=self.calibSettingsCallback)
         self.btnCalibSettings.pack(side="right",padx=15, pady=15)        
     
+    ###########################################################################
+    # Update Calibration Tab
     def setCalibrationTab(self):
         if self.measFuncVar.get() == 1:
             if not self.frCalMode.winfo_ismapped():
@@ -824,7 +781,8 @@ class MainWindow(threading.Thread):
                 self.pwReflCalib.pack()
             self.pwTransCalib.pack_forget()
             
-        
+    ###########################################################################
+    # Calibration Settings Toplevel Window 
     def calibSettingsCallback(self):
         ySpacing = 2
         
@@ -914,11 +872,62 @@ class MainWindow(threading.Thread):
         
         btnOk = Button(top,text="Ok",command=top.destroy)
         btnOk.pack()
-        
-
+    ###########################################################################
+    #  Plotting
     
-
-
+    def plot(self):
+        
+        self.setAxesLabels()        
+        t = np.arange(0,400,1)
+        s1 = 20*np.log(np.abs(np.random.randn(np.size(t))))
+        self.ax1.cla()
+        self.ax1.plot(t, s1, 'y')
+        self.ax1.set_xlabel(self.xLbl,fontsize='medium')
+        # Make the y-axis label and tick labels match the line color.
+        self.ax1.set_ylabel(self.yLbl[0], color='y',fontsize='medium')
+        
+        for tl in self.ax1.get_yticklabels():
+            tl.set_color('y')
+        s2 = np.sin(2*np.pi*t/400)+0.1*np.random.randn(np.size(t))
+        
+        self.ax2.cla()
+        self.ax2.plot(t, s2, 'c')
+        self.ax2.set_ylabel(self.yLbl[1], color='c',fontsize='medium')
+        for tl in self.ax2.get_yticklabels():
+            tl.set_color('c')
+        
+        self.canvas.draw()
+        
+        
+    def setAxesLabels(self):
+        XLABELS = ('Frequency [Hz]',
+            'DC Bias [V]',
+            'Osc Lvl [V]',
+            'Osc Lvl [dBm]',
+            r'Osc Lvl [dB$\mu$V]')
+        self.xLbl = XLABELS[self.sweepParameter.get()-1] #Radiobutton counts from 1, Python counts from 0
+        angleStr = ('[deg]','[rad]')[self.angleMode.get()-1]
+        if self.measFuncVar.get() == 1:
+            YLABELS= [('Gain [dB]','Phase '+angleStr),
+            ('Gain','Phase '+angleStr),
+            ('Re {Gain}','Im {Gain}'),
+            ('Gain [dB]','Group Delay')]
+            self.yLbl = YLABELS[self.formatNetwork.get()-1]
+            self.ax2.patch.set_visible(False)
+            self.canvas.show()
+            
+    def startPlotting(self):
+        if not self.plotRun:
+            self.plotThread.start()
+            self.btnStartStop.config(text="Stop")
+        else:
+            self.plotThread.stop()
+            self.btnStartStop.config(text="Run")
+        self.plotRun = not self.plotRun
+        
+    ###########################################################################
+    # Entry Bind Callbacks
+        
     def eStartCallback(self,event):
         print 'Start = '+self.startFreqStr.get()
     def eStopCallback(self,event):
@@ -975,7 +984,11 @@ class MainWindow(threading.Thread):
         print 'ShtRes = '+self.shtRes.get()
     def eShtIndCallback(self,event):
         print 'ShtInd = '+self.shtInd.get()
-        
+
+
+    ###########################################################################
+    # Callbacks   
+  
     def resBWCallback(self,event):
         print(self.sbResBW.current())     
     
@@ -989,10 +1002,7 @@ class MainWindow(threading.Thread):
             self.setActiveTabs()
             self.setCalibrationTab()
             self.setReceiverTab()
-            
-    def hello(self):
-        print "hello"
-    
+
     def show(self):
         self.root.mainloop()
       
