@@ -308,24 +308,14 @@ class MainWindow(threading.Thread):
         pw11 = PanedWindow(pw1,orient=VERTICAL)
         pw11.pack(fill=BOTH,expand=1)
         
-        ##### Format Radiobuttons #####
-#        UNITS = [
-#            ('dBm', 1),
-#            ('dBµV', 2),
-#            ('Vrms', 3),
-#            ('dBm/Hz', 4),
-#            ('dBµV/Hz', 5),
-#            ('V/Hz', 6)
-#        ]   
-#        pw11.add(self.radioFrame(pw11,UNITS,"Unit",self.formatSpectrum,'top',1,None))
-        
+        ##### Format Combobox #####
         lfUnits = Labelframe(pw11,text="Unit")
         lfUnits.pack(fill=BOTH,expand=1)
         UNITS = ('dBm','dBµV', 'Vrms', 'dBm/Hz', 'dBµV/Hz', 'V/Hz')
-        cbUnit = Combobox(lfUnits,values=UNITS, textvariable = self.unitSpectrum)
-        cbUnit.pack(anchor=CENTER,padx=10,pady=10)
-        cbUnit.set(UNITS[0])
-        cbUnit.bind("<<ComboboxSelected>>",self.unitSpectrumCallback)       
+        self.cbUnitSpec = Combobox(lfUnits,values=UNITS, textvariable = self.unitSpectrum)
+        self.cbUnitSpec.pack(anchor=CENTER,padx=10,pady=10)
+        self.cbUnitSpec.set(UNITS[0])
+        self.cbUnitSpec.bind("<<ComboboxSelected>>",self.unitSpectrumCallback)       
         pw11.add(lfUnits)
         
         pw1.add(pw11)
@@ -380,7 +370,7 @@ class MainWindow(threading.Thread):
         ##### Format Combobox #####
         FMTS = ('|Z| - Theta',
                 'R - X', 
-                'Ls Rs', 
+                'Ls - Rs', 
                 'Ls - Q',
                 'Cs - Rs',
                 'Cs - D',
@@ -393,10 +383,10 @@ class MainWindow(threading.Thread):
                 
         lfFmt = Labelframe(pw1,text="Format")
         lfFmt.pack(fill=BOTH,expand=1)
-        cbFmt = Combobox(lfFmt,values=FMTS, textvariable = self.formatImpedance)
-        cbFmt.pack(anchor=CENTER,padx=10,pady=10)
-        cbFmt.set(FMTS[0])
-        cbFmt.bind("<<ComboboxSelected>>",self.formatImpedanceCallback)       
+        self.cbFormatImp = Combobox(lfFmt,values=FMTS, textvariable = self.formatImpedance)
+        self.cbFormatImp.pack(anchor=CENTER,padx=10,pady=10)
+        self.cbFormatImp.set(FMTS[0])
+        self.cbFormatImp.bind("<<ComboboxSelected>>",self.formatImpedanceCallback)       
         pw1.add(lfFmt)
         
         pw2 = PanedWindow(pwFull,orient=VERTICAL)
@@ -663,6 +653,7 @@ class MainWindow(threading.Thread):
         self.ax1.xaxis.label.set_color([.8, .8, .8])
         self.ax1.tick_params(axis='x', colors=[.8, .8, .8])       
         
+        self.ax2.patch.set_visible(False)
         self.plot()
     
 ############################## Build Receiver Tab #############################
@@ -942,9 +933,39 @@ class MainWindow(threading.Thread):
             ('Re {Gain}','Im {Gain}'),
             ('Gain [dB]','Group Delay')]
             self.yLbl = YLABELS[self.formatNetwork.get()-1]
-            self.ax2.patch.set_visible(False)
-            self.canvas.show()
-    
+        elif self.measFuncVar.get() == 2:
+            YLABELS= ('dBm',r'dB$\mu$V', 'Vrms', 'dBm/Hz', r'dB$\mu$V/Hz', 'V/Hz')
+            self.yLbl = (YLABELS[self.cbUnitSpec.current()],'')
+        elif self.measFuncVar.get() == 3:
+            YLABELS= [('|Z|', 'Theta'),
+                ('R','X'), 
+                ('Ls','Rs'), 
+                ('Ls','Q'),
+                ('Cs','Rs'),
+                ('Cs','D'),
+                ('|Y|','Theta'),
+                ('G','B'),
+                ('Lp','Rp'),
+                ('Lp','Q'),
+                ('Cp','Rp'),
+                ('Cp','D')]
+            self.yLbl = YLABELS[self.cbFormatImp.current()]
+        elif self.measFuncVar.get() in (4,7):
+            YLABELS= [('Gain [dB]','Phase '+angleStr),
+            ('Gain','Phase '+angleStr),
+            ('Re {Gain}','Im {Gain}'),
+            ('Gain [dB]','Group Delay')]
+            self.yLbl = YLABELS[self.formatS1122.get()-1]
+        elif self.measFuncVar.get() in (5,6):
+            YLABELS= [('Gain [dB]','Phase '+angleStr),
+            ('Gain','Phase '+angleStr),
+            ('Re {Gain}','Im {Gain}'),
+            ('Gain [dB]','Group Delay')]
+            self.yLbl = YLABELS[self.formatS2112.get()-1]
+            
+            
+            
+        
     ##### Start/Stop Replotting #####       
     def startPlotting(self):
         if not self.plotRun:
