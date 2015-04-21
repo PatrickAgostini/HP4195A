@@ -160,9 +160,13 @@ class HP4195A(HP4195A_Constants):
     """
     Class Status Flags    
     """    
-    status_Connected = False    
-    status_MeasMode  = 'NETWORK'
-    
+    status_Connected     = False    
+    status_MeasMode      = 'NETWORK'
+    status_CurrentAngle  = ()
+    status_CurrentFormat = ()
+    status_CurrentPort   = ()
+    status_CurrentDA     = ()
+      
     
     
     """
@@ -207,28 +211,38 @@ class HP4195A(HP4195A_Constants):
     def checkCommand(self, list, value):
         if str(type(value))=="str":
             if self.isStrCommand(list, value):
-                return True
+                return value
         else:
             if self.isNumCommand(list, value):
-                return True
+                return self.isNumCommand(list, value)
         print("Error:\nCommand does not Exist!\nFollowing Commands are Accepted:\n")
         self.printCommandList(list)
-        return False                
-            
+        return False     
+    def getCommand(self, list, value):
+        if str(type(value))=="str":
+            if self.isStrCommand(list, value):
+                return value
+        return value
     def isNumCommand(self, list, value):
         for k, v in list.iteritems():
             if v==value:
-                return True
+                return k
         return False
-        
     def isStrCommand(self, list, value):
         for k in list.iteritems():
             if k==value:
                 return True
         return False
+    def getStrCommandValue(self, list, value):
+        if self.isStrCommand(list, value):
+            return value
+        else:
+            for k, v in list.iteritems():
+                if v==value:
+                    return k
     def printCommandList(self, list):
          for k, v in list.iteritems():
-             print str(k) + '<<< or >>>' + str(v)
+             print str(k) + '   <<< or >>>   ' + str(v)
 ###############################################################################       
       
     def getStatusByte(self):
@@ -260,35 +274,38 @@ class HP4195A(HP4195A_Constants):
 ###############################################################################
 ## Measurement Configuration  
     def setMeasurementMode(self, value):
-        self.sendDev('FNC' + self.MeasurementModes[value])
-        self.currentMode = self.MeasurementModes[value]
+        if self.checkCommand(self.MeasurementModes, value):
+            self.sendDev('FNC' + self.getCommand(self.MeasurementModes, value))
+            self.status_MeasMode = self.getStrCommandValue(self.MeasurementModes, value)
     
     def setPort(self, value):
-        if self.status_MeasMode == 1:
-            self.setNetworkPort(value)
-        elif self.status_MeasMode == 2:
-            self.setSpectrumPort(value)
+        if self.status_MeasMode   == 'NETWORK':
+            return self.setNetworkPort(value)
+        elif self.status_MeasMode == 'SPECTRUM':
+            return self.setSpectrumPort(value)
         else:
-            self.setImpedancePort(value)
+            return self.setImpedancePort(value)
             
     def setFormat(self, value):
-        if self.status_MeasMode == 1:
-            self.setNetworkFormat(value)
-        elif self.status_MeasMode == 2:
-            self.setSpectrumFormat(value)
-        elif self.status_MeasMode == 3:
-            self.setImpedanceFormat(value)
+        if self.status_MeasMode == 'NETWORK':
+            return self.setNetworkFormat(value)
+        elif self.status_MeasMode == 'SPECTRUM':
+            return self.setSpectrumFormat(value)
+        elif self.status_MeasMode == 'IMPEDANCE':
+            return self.setImpedanceFormat(value)
         else:
-            self.setSModeFormat(value)
+            return self.setSModeFormat(value)
     
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     Special Functions
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     def setDelayApperture(self, value):
-        self.setRegister('DFREQ' , value) 
+        self.setRegister('DFREQ' , value)
+        self.status_CurrentDA = value
     
     def setAngleMode(self, mode): #value = 'rad', 'deg'
         self.sendDev(mode.upper)
+        self.status_CurrentAngle = mode
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     """
@@ -297,12 +314,14 @@ class HP4195A(HP4195A_Constants):
     def setNetworkPort(self, value):
         if self.checkCommand(self.NetworkPortModes, value):
             self.sendDev('PORT' + str(self.NetworkPortModes[value]))
+            self.status_CurrentPort = self.getStrCommandValue(self.NetworkPortModes, value)
             return True
         return False
         
     def setNetworkFormat(self, value):
         if self.checkCommand(self.NetworkModeFormats, value):
             self.sendDev('GPP' + str(self.NetworkModeFormats[value]))
+            self.status_CurrentFormat = self.getStrCommandValue(self.NetworkModeFormats, value)
             return True
         return False
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -313,16 +332,19 @@ class HP4195A(HP4195A_Constants):
     def setSpectrumFormat(self, value):
         if self.checkCommand(self.SpectrumModeFormats, value):
             self.sendDev('SAP' + str(self.SpectrumModeFormats[value]))
+            self.status_CurrentFormat = self.getStrCommandValue(self.SpectrumModeFormats, value)
             return True
         return False        
     def setSpectrumPort(self, value):
         if self.checkCommand(self.SpectrumModePorts, value):
             self.sendDev('PORT' + str(self.SpectrumModePorts[value]))
+            self.status_CurrentPort = self.getStrCommandValue(self.SpectrumModePorts, value)
             return True
         return False                
     def setTrackingGeneratorOutput(self, value):
         if self.checkCommand(self.SpectrumModeTrackingGenOut, value):
             self.sendDev('PWR' + str(self.SpectrumModeTrackingGenOut[value]))
+            self.status_CurrentTrackingMode = self.getStrCommandValue(self.SpectrumModeTrackingGenOut, value)
             return True
         return False       
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -333,12 +355,14 @@ class HP4195A(HP4195A_Constants):
     def setImpedanceFormat(self, value):
         if self.checkCommand(self.ImpedanceModeFormats, value):
             self.sendDev('IMP' + str(self.ImpedanceModeFormats[value]))
+            self.status_CurrentFormat = self.getStrCommandValue(self.ImpedanceModeFormats, value)
             return True
         return False  
         
     def setImpedancePort(self, value):
         if self.checkCommand(self.ImpedanceModePorts, value):
             self.sendDev('PORT' + str(self.ImpedanceModePorts[value]))
+            self.status_CurrentPort = self.getStrCommandValue(self.ImpedanceModePorts, value)
             return True
         return False  
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -350,9 +374,11 @@ class HP4195A(HP4195A_Constants):
         if self.checkCommand(self.SModeFormats, value):        
             if self.currentMode == 4 or self.currentMode == 7:
                 self.sendDev('SPI' + str(self.SModeFormats[value]))
+                self.status_CurrentFormat = self.getStrCommandValue(self.SModeFormats, value)
                 return True
             else:
                 self.sendDev('GPP' + str(self.SModeFormats[value]))
+                self.status_CurrentFormat = self.getStrCommandValue(self.SModeFormats, value)
                 return True
         return False
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
