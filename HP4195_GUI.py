@@ -19,6 +19,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 #from PIL import Image, ImageTk
 import threading
+import tkFileDialog
 
 class MainWindow(threading.Thread):
     
@@ -135,7 +136,7 @@ class MainWindow(threading.Thread):
         menubar = Menu(self.root)
         # File-Menu
         filemenu = Menu(menubar, tearoff=0)
-        filemenu.add_command(label="Save")
+        filemenu.add_command(label="Save", command=self.storeNif)
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=self.destructor)
         menubar.add_cascade(label="File", menu=filemenu)
@@ -897,7 +898,7 @@ class MainWindow(threading.Thread):
         
         self.setAxesLabels()        
         t = np.arange(0,400,1)
-        s1 = 20*np.log(np.abs(np.random.randn(np.size(t))))
+        s1 = 20*np.log(1+np.abs(np.random.randn(np.size(t))))
         self.ax1.cla()
         self.ax1.plot(t, s1, 'y')
         self.ax1.set_xlabel(self.xLbl,fontsize='medium')
@@ -962,6 +963,8 @@ class MainWindow(threading.Thread):
             ('Re {Gain}','Im {Gain}'),
             ('Gain [dB]','Group Delay')]
             self.yLbl = YLABELS[self.formatS2112.get()-1]
+            
+            
             
             
             
@@ -1056,10 +1059,53 @@ class MainWindow(threading.Thread):
         
   
     def measFuncCall(self):
-            print'FNC'+str(self.measFuncVar.get())
-            self.setActiveTabs()
-            self.setCalibrationTab()
-            self.setReceiverTab()
+        print'FNC'+str(self.measFuncVar.get())
+        self.setActiveTabs()
+        self.setCalibrationTab()
+        self.setReceiverTab()
+            
+    def storeNif(self):
+        X = np.random.randn(401)
+        A = np.random.randn(401)
+        B = np.random.randn(401)
+        if self.measFuncVar.get() == 2: #Spectrum?
+            data = np.vstack((X,A)).T
+            info = (self.xLbl, self.yLbl[0])
+            print(data.shape)
+        else:
+            data = np.vstack((X,A,B)).T
+            info = (self.xLbl, self.yLbl[0], self.yLbl[1])
+        
+      
+        
+        self.py2nif(data, info)
+        
+    def py2nif(self,data,info):
+        """
+        Convert from python array to .nif  for Quickcog
+    
+        Keyword arguments:
+        data: MxN numpy array 
+        filename: filename of .nif output file
+        """
+        
+        outfile = tkFileDialog.asksaveasfile(mode='w', defaultextension=".nif")
+        if outfile is None: # asksaveasfile return `None` if dialog closed with "cancel".
+            return
+    
+        r,c = data.shape
+        outfile.write(str(r)+", "+str(c)+"\n")
+        outfile.write("{:18.17e}".format(np.max(data))+", "+"{:18.17e}".format(np.min(data))+"\n")
+        outfile.write("\nASCII \n")
+        outfile.write("\n0\n")
+        for x in xrange(c):
+            outfile.write(info[x]+"\n")
+            for y in xrange(r):
+                outfile.write("{:18.17e}".format(data[y,x])+"\n")
+        outfile.close()
+    
+    
+        
 
     def show(self):
         self.root.mainloop()

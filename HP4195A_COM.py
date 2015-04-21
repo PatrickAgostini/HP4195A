@@ -45,6 +45,8 @@ class HP4195A_COM:
     def sendDev(self, command):  
         if self.deviceOpen:
             self.device.write(command)
+        else:
+            print('No device connected! ' + command)
  
 ###############################################################################       
       
@@ -224,7 +226,7 @@ class HP4195A_COM:
         if Z0 == 50:
             self.sendDev('CHRZ1')
         elif Z0 == 75:
-            self.sendDev('CHRZ1')
+            self.sendDev('CHRZ2')
         else:
             print('Error: Argument must be 50 or 75.')
         
