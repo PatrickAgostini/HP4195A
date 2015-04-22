@@ -17,13 +17,13 @@ class HP4195A_Constants:
         General Constatnts
         """
         MeasurementModes = {
-            'NETWORK' : 1,
-            'SPECTRUM': 2,
-            'IMPEDANCE': 3,
-            'S11': 4,
-            'S21': 5,
-            'S12': 6,
-            'S22': 7  
+            'NETWORK'   : 1,
+            'SPECTRUM'  : 2,
+            'IMPEDANCE' : 3,
+            'S11'       : 4,
+            'S21'       : 5,
+            'S12'       : 6,
+            'S22'       : 7  
         }
         GeneralIFModes = {
             'Normal'           : 1,
@@ -149,14 +149,40 @@ class HP4195A_Constants:
             '0O Offset'   : 2,
             '0S&0O Offset': 3
         }
-
-###############################################################################
+        CalibrationModes = {
+            'Transmission' : 1,
+            'Reflection'   : 2        
+        }
+        
+        AngleMode = {
+            'Deg' : 1,
+            'Rad' : 2
+        }
+        """
+        Stimulus Parameters
+        """
+        SweepParameters = {
+            'Frequency [Hz]' : 1,
+            'DC Bias [V]'    : 2,
+            'Osc Lvl [V]'    : 3,
+            'Osc Lvl [dBm]'  : 4,
+            'Osc Lvl [dBµV]' : 5
+        }   
+        SweepModes = {
+            'Linear'      : 1,
+            'Logarithmic' : 2,
+        }
+        TriggerModes = {   
+            'Continuous' : 1,
+            'Single'     : 2,
+            'Manual'     : 3
+        }     
+        
+        
 class HP4195A(HP4195A_Constants):
-    
     DeviceObj            = ()    
     visa_ResourceManager = ()
     GPIBO_Address        = ()
-        
     """
     Class Status Flags    
     """    
@@ -165,63 +191,65 @@ class HP4195A(HP4195A_Constants):
     status_CurrentAngle  = ()
     status_CurrentFormat = ()
     status_CurrentPort   = ()
-    status_CurrentDA     = ()
-      
-    
-    
+    status_CurrentDA     = () 
+    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     """
     Class Init Stuff
     """
     def __init__(self):
         self.visa_ResourceManager = visa.ResourceManager()
         self.getDevAddr()
-    
     def __del__(self):    
-        self.Disconnect()
-        
+        self.Disconnect() 
     def getDevAddr(self):
         devList      = self.visa_ResourceManager.list_resources()
         if devList: 
             self.GPIBO_Address = [s for s in devList if "GPIB0" in s]
             self.GPIBO_Address = str(self.GPIBO_Address[0])
-            return 1
-        
+            return 1   
     def Connect(self):       
         if self.getDevAddr():
             self.DeviceObj = self.visa_ResourceManager.open_resource(self.GPIBO_Address)
             self.status_Connected = True
-    
     def Disconnect(self):
         self.visa_ResourceManager.close
         self.status_Connected = False
         self.GPIBO_Address    = ()
         self.DeviceObj        = ()
-        
     def queryDev(self, command):
         answer = None
         if self.status_Connected:
             answer = self.DeviceObj.query(command)
         return answer
-        
     def sendDev(self, command):  
         if self.status_Connected:
             self.DeviceObj.write(command)
-            
- ##############################################################################
+        else:
+            print "Dev not Connected"
+    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
+    Command Handling
+    """
+    def sendCommand(self, cmd, value, list):
+        if self.checkCommand(list, value):
+            if self.sendDev(cmd + str(self.getCommand(list, value))):
+                return 1
+        return 0
     def checkCommand(self, list, value):
-        if str(type(value))=="str":
+        if isinstance(value, (str)):
             if self.isStrCommand(list, value):
                 return value
         else:
             if self.isNumCommand(list, value):
                 return self.isNumCommand(list, value)
-        print("Error:\nCommand does not Exist!\nFollowing Commands are Accepted:\n")
+        print("Error: Command does not Exist!\nFollowing Commands are Accepted:\n")
         self.printCommandList(list)
         return False     
     def getCommand(self, list, value):
-        if str(type(value))=="str":
-            if self.isStrCommand(list, value):
-                return value
+        if isinstance(value, (str)):
+            return self.getIntCommandValue(list, value)
         return value
     def isNumCommand(self, list, value):
         for k, v in list.iteritems():
@@ -229,55 +257,65 @@ class HP4195A(HP4195A_Constants):
                 return k
         return False
     def isStrCommand(self, list, value):
-        for k in list.iteritems():
+        for k, v in list.iteritems():
             if k==value:
                 return True
         return False
+    def getIntCommandValue(self, list, value):
+        for k, v in list.iteritems():
+            if k==value:
+                return v
     def getStrCommandValue(self, list, value):
         if self.isStrCommand(list, value):
             return value
         else:
             for k, v in list.iteritems():
                 if v==value:
-                    return k
+                    return v
     def printCommandList(self, list):
          for k, v in list.iteritems():
              print str(k) + '   <<< or >>>   ' + str(v)
-###############################################################################       
-      
+    def isNum(self, value):
+        return isinstance(value, (int, long, float, complex))
+    def isfloat(self, value):
+        try:
+            float(value)
+            return True
+        except ValueError:
+            return False      
+    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
+    Get & Set System Stuff
+    """
     def getStatusByte(self):
         return self.queryDev("STB?")
-        
     def getRevisionNumber(self):
         return self.queryDev("REV?")
-            
     def getID(self):
         return self.queryDev("ID?")
-            
     def getError(self):
         return self.queryDev("ERR?")        
-            
     def getDisplayMessage(self):
         return self.queryDev("DISP?")
-            
     def getComment(self):
         return self.queryDev("CMT?")
-        
     def getRegister(self,name):
         command=name.upper()+"?"
         return self.queryDev(command)
-        
     def setRegister(self,name,value):
-        command=name.upper()+"="+str(value)
-        return self.sendDev(command)
-
-###############################################################################
-## Measurement Configuration  
-    def setMeasurementMode(self, value):
-        if self.checkCommand(self.MeasurementModes, value):
-            self.sendDev('FNC' + self.getCommand(self.MeasurementModes, value))
-            self.status_MeasMode = self.getStrCommandValue(self.MeasurementModes, value)
+        if self.isNum(value):
+            if self.sendDev(name.upper() + "=" + str(value)):
+                return 1
+        return 0
+    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
+    General Functions
     
+    """
+    def setMeasurementMode(self, value):
+        return self.sendCommand('FNC', value, self.MeasurementModes) 
     def setPort(self, value):
         if self.status_MeasMode   == 'NETWORK':
             return self.setNetworkPort(value)
@@ -285,7 +323,6 @@ class HP4195A(HP4195A_Constants):
             return self.setSpectrumPort(value)
         else:
             return self.setImpedancePort(value)
-            
     def setFormat(self, value):
         if self.status_MeasMode == 'NETWORK':
             return self.setNetworkFormat(value)
@@ -294,16 +331,12 @@ class HP4195A(HP4195A_Constants):
         elif self.status_MeasMode == 'IMPEDANCE':
             return self.setImpedanceFormat(value)
         else:
-            return self.setSModeFormat(value)
-    
-    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-    Special Functions
-    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+            return self.setSModeFormat(value)    
     def setDelayApperture(self, value):
-        self.setRegister('DFREQ' , value)
-        self.status_CurrentDA = value
-    
-    def setAngleMode(self, mode): #value = 'rad', 'deg'
+        if self.isfloat(value):
+            return self.setRegister('DFREQ' , value)
+        return 0
+    def setAngleMode(self, mode):
         self.sendDev(mode.upper)
         self.status_CurrentAngle = mode
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -312,264 +345,187 @@ class HP4195A(HP4195A_Constants):
     Network Mode Functions
     """
     def setNetworkPort(self, value):
-        if self.checkCommand(self.NetworkPortModes, value):
-            self.sendDev('PORT' + str(self.NetworkPortModes[value]))
-            self.status_CurrentPort = self.getStrCommandValue(self.NetworkPortModes, value)
-            return True
-        return False
-        
+        return self.sendCommand('PORT', value, self.NetworkModePorts) 
     def setNetworkFormat(self, value):
-        if self.checkCommand(self.NetworkModeFormats, value):
-            self.sendDev('GPP' + str(self.NetworkModeFormats[value]))
-            self.status_CurrentFormat = self.getStrCommandValue(self.NetworkModeFormats, value)
-            return True
-        return False
+        return self.sendCommand('GPP', value, self.NetworkModeFormats)
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     """
     Spectrum Mode Functions
     """
-    def setSpectrumFormat(self, value):
-        if self.checkCommand(self.SpectrumModeFormats, value):
-            self.sendDev('SAP' + str(self.SpectrumModeFormats[value]))
-            self.status_CurrentFormat = self.getStrCommandValue(self.SpectrumModeFormats, value)
-            return True
-        return False        
-    def setSpectrumPort(self, value):
-        if self.checkCommand(self.SpectrumModePorts, value):
-            self.sendDev('PORT' + str(self.SpectrumModePorts[value]))
-            self.status_CurrentPort = self.getStrCommandValue(self.SpectrumModePorts, value)
-            return True
-        return False                
-    def setTrackingGeneratorOutput(self, value):
-        if self.checkCommand(self.SpectrumModeTrackingGenOut, value):
-            self.sendDev('PWR' + str(self.SpectrumModeTrackingGenOut[value]))
-            self.status_CurrentTrackingMode = self.getStrCommandValue(self.SpectrumModeTrackingGenOut, value)
-            return True
-        return False       
+    def setSpectrumFormat(self, value):    
+        return self.sendCommand('SAP', value, self.SpectrumModeFormats)
+    def setSpectrumPort(self, value):              
+        return self.sendCommand('PORT', value, self.SpectrumModePorts)
+    def setTrackingGeneratorOutput(self, value):   
+        return self.sendCommand('PWR', value, self.SpectrumModeTrackingGenOut)
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     """
     Impedance Mode Functions
     """
     def setImpedanceFormat(self, value):
-        if self.checkCommand(self.ImpedanceModeFormats, value):
-            self.sendDev('IMP' + str(self.ImpedanceModeFormats[value]))
-            self.status_CurrentFormat = self.getStrCommandValue(self.ImpedanceModeFormats, value)
-            return True
-        return False  
-        
+        return self.sendCommand('IMP', value, self.ImpedanceModeFormats)
     def setImpedancePort(self, value):
-        if self.checkCommand(self.ImpedanceModePorts, value):
-            self.sendDev('PORT' + str(self.ImpedanceModePorts[value]))
-            self.status_CurrentPort = self.getStrCommandValue(self.ImpedanceModePorts, value)
-            return True
-        return False  
+        return self.sendCommand('PORT', value, self.ImpedanceModePorts)
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     """
     S Mode Functions
     """
-    def setSModeFormat(self, value):
-        if self.checkCommand(self.SModeFormats, value):        
-            if self.currentMode == 4 or self.currentMode == 7:
-                self.sendDev('SPI' + str(self.SModeFormats[value]))
-                self.status_CurrentFormat = self.getStrCommandValue(self.SModeFormats, value)
-                return True
-            else:
-                self.sendDev('GPP' + str(self.SModeFormats[value]))
-                self.status_CurrentFormat = self.getStrCommandValue(self.SModeFormats, value)
-                return True
-        return False
+    def setSModeFormat(self, value):       
+        if self.currentMode == 'S11' or self.currentMode == 'S22':
+            return self.sendCommand('SPI', value, self.SModeFormats)
+        else:
+            return self.sendCommand('GPP', value, self.SModeFormats)
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""    
     """
     Calibration Functions
     """
-        
-    def normIsnCal(self):
-        self.sendDev('CALT5')
-        
-    def isolatn(self):
-        self.sendDev('ISNCAL')
-        
-    def normalizeThru(self):
-        self.sendDev('CALT4')    
-        
-    def thruCal(self):
-        self.sendDev('THRCAL')
-        
-    def correctnOnOff(self, on):
-        self.sendDev('CORR' + str(int(bool(on))))
-        
-    def calStdModify(self):
-        self.sendDev('STDDSP')
-        
-    def setOpenCalStd(self, conductance, capacitance):
-        self.sendDev('OPNSTD=' + str(conductance) + ',' + str(capacitance))
-        
-    def setLoadCalStd(self, resistance, inductance):
-        self.sendDev('LDSTD=' + str(resistance) + ',' + str(inductance))
-        
-    def setShortCalStd(self, conductance, capacitance):
-        self.sendDev('SHTSTD=' + str(conductance) + ',' + str(capacitance))
-            
-    def onePortFullCal(self):
-        self.sendDev('CALT3')
-
-    def onePortPartCal(self):
-        self.sendDev('CALT2')
-        
-    def NormalizeOpen(self):
-        self.sendDev('CALT1')
-        
-    def shortCal(self):
-        self.sendDev('SHTCAL')
-        
-    def loadCal(self):
-        self.sendDev('LDCAL')
-        
-    def openCal(self):
-        self.sendDev('OPNCAL')
-        
-    # 0S/0Ohm Offset Compensation
-
     def setCharacteristicImpedance(self, value):
-        self.sendDev('CHRZ' + str(self.CharacteristicImpedances[value]))
-        
+        if self.isfloat(value):
+            return self.sendDev('CHRZ' + str(self.CharacteristicImpedances[value]))
+        return 0
+    def shortCal(self):
+        return self.sendDev('SHTCAL')
+    def loadCal(self):
+        return self.sendDev('LDCAL')
+    def openCal(self):
+        return self.sendDev('OPNCAL')
+    def normIsnCal(self):
+        return self.sendDev('CALT5')
+    def isoCal(self):
+        return self.sendDev('ISNCAL')
+    def normalizeThru(self):
+        return self.sendDev('CALT4')    
+    def thruCal(self):
+        return self.sendDev('THRCAL')
+    def correctnOnOff(self, on):
+        return self.sendDev('CORR' + str(int(bool(on))))
+    def calStdModify(self):
+        return self.sendDev('STDDSP')
+    def setOpenCalStd(self, conductance, capacitance):
+        if self.isfloat(conductance) and self.isfloat(capacitance):
+            return self.sendDev('OPNSTD=' + str(conductance) + ',' + str(capacitance))
+        return 0
+    def setLoadCalStd(self, resistance, inductance):
+        if self.isfloat(resistance) and self.isfloat(inductance):
+            return self.sendDev('LDSTD=' + str(resistance) + ',' + str(inductance))
+        return 0
+    def setShortCalStd(self, conductance, capacitance):
+        if self.isfloat(conductance) and self.isfloat(capacitance):            
+            return self.sendDev('SHTSTD=' + str(conductance) + ',' + str(capacitance))
+        return 0
+    def onePortFullCal(self):
+        return self.sendDev('CALT3')
+    def onePortPartCal(self):
+        return self.sendDev('CALT2')
+    def NormalizeOpen(self):
+        return self.sendDev('CALT1')
     def zeroResistanceCalibration(self):
-        self.sendDev('ZOCMP')
-        
+        return self.sendDev('ZOCMP')
     def zeroConductanceCalibration(self):
-        self.sendDev('ZSCMP')
-        
+        return self.sendDev('ZSCMP')
     def setCompensationFunction(self,value):
-        self.sendDev('CMPT' + str(self.OffsetCompensationFunctions[value]))
-
-###############################################################################        
-## Port Extension
-    
-    def setExtensionLength(self, port, value): #port = 'R1','R2','T1','T2','P1','P2'
-        self.setRegister('PE' + port, value)
-        
-    def portExtensionOnOff(self, onOff):
-        self.sendDev('PEXT' + str(int(bool(onOff))))     
-###############################################################################
-## Stimulus Settings
-
-    def setBias(self,value):
-        self.setRegister('BIAS',value)
-        
-    def setCenterFreq(self,value):
-        self.setRegister('CENTER',value)
-    
-    def setConstFreq(self,value):
-        self.setRegister('FREQ',value)
-        
-    def setNumberOfPoints(self,value):
-        self.setRegister('NOP',value)
-
-    def setOsc1Amplitude(self,value):
-        self.setRegister('OSC1',value)
-        
-    def setOsc2Amplitude(self,value):
-        self.setRegister('OSC2',value)
-        
-    def setSpan(self,value):
-        self.setRegister('SPAN',value)
-
-    def setStartFreq(self,value):
-        self.setRegister('START',value)
-        
-    def setStep(self,value):
-        self.setRegister('STEP',value)
-    
-    def setStopFreq(self,value):
-        self.setRegister('STOP',value)
-
-    def setSweepParameter(self,value):
-       self.sendDev('SWP'+str(value))
-       self.currentSweepParameter=value
-       
-    def setSweepTime(self,value):
-        self.setRegister('ST',value)
-       
-    def setSweepType(self,value):
-        self.sendDev('SWT'+str(value))
-        self.currentSweepType=value
-        
-###############################################################################
-## Get Stimulus Settings
-
+        return self.sendDev('CMPT' + str(self.OffsetCompensationFunctions[value]))
     def getBias(self):
         self.getRegister('BIAS')
-        
     def getCenterFreq(self):
-        self.getRegister('CENTER')
-    
+        self.getRegister('CENTER')    
     def getConstFreq(self,value):
-        self.setRegister('FREQ')
-        
+        self.getRegister('FREQ')        
     def getNumberOfPoints(self):
         self.getRegister('NOP')
-
     def getOsc1Amplitude(self):
-        self.getRegister('OSC1')
-        
+        self.getRegister('OSC1')        
     def getOsc2Amplitude(self):
-        self.getRegister('OSC2')
-        
+        self.getRegister('OSC2')        
     def getSpan(self):
         self.getRegister('SPAN')
-
     def getStartFreq(self):
-        self.getRegister('START')
-        
+        self.getRegister('START')        
     def getStep(self,value):
-        self.getRegister('STEP')
-    
+        self.getRegister('STEP')    
     def getStopFreq(self,value):
-        self.getRegister('STOP')
-
-#    def getSweepParameter(self):
-#       return self.currentSweepParameter
-       
+        self.getRegister('STOP')       
     def getSweepTime(self):
         self.setRegister('ST')
-       
-#    def getSweepType(self):
-#        return self.currentSweepType
-   
-###############################################################################
-## Receiver Settings
-    def setIFRange(self, value):
-        if self.currentMode==2:
-            self.sendDev('IRNG' + self.SpectrumIFModes[value])
-        else:
-            self.sendDev('IRNG' + self.GeneralIFModes[value])
-        
-    def setInputAttenuation(self,input,value): #input = 'R1', 'T1', 'R2', T2'
-        self.setRegister('AT' + input, value)
+    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""       
+    """
+    Port Extensions
+    """    
+    def setExtensionLength(self, port, value):
+        if self.isfloat(value):
+            return self.setRegister('PE' + port, value)
+        return 0
+    def portExtensionOnOff(self, onOff):
+        self.sendDev('PEXT' + str(int(bool(onOff))))  
+    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""    
+    """
+    Set Stimulus Settings  
+    """
+    def setSweepParameter(self, value):
+        return self.sendCommand('SWP', value, self.SweepParameters)        
+    def setSweepMode(self,value):
+        return self.sendCommand('SWT', value, self.SweepModes)
+    def setBias(self, value):
+        return self.setRegister('BIAS'  , value)
+    def setCenterFreq(self, value):
+        return self.setRegister('CENTER', value)  
+    def setConstFreq(self, value):
+        return self.setRegister('FREQ'  , value)       
+    def setNumberOfPoints(self, value):
+        return self.setRegister('NOP'   , value)
+    def setOsc1Amplitude(self, value):
+        return self.setRegister('OSC1'  , value)       
+    def setOsc2Amplitude(self, value):
+        return self.setRegister('OSC2'  , value)       
+    def setSpan(self, value):
+        return self.setRegister('SPAN'  , value)
+    def setStartFreq(self, value):
+        return self.setRegister('START' , value)        
+    def setStep(self, value):
+        return self.setRegister('STEP'  , value)  
+    def setStopFreq(self, value):
+        return self.setRegister('STOP'  , value)
+    def setSweepTime(self, value):
+        return self.setRegister('ST'    , value)
+    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
+    Set Receiver Settings
     
+    """
+    def setIFRange(self, value):
+        if self.currentMode=="SPECTRUM":
+            return self.sendCommand('IRNG', value, self.SpectrumIFModes)
+        else:
+            return self.sendCommand('IRNG', value, self.GeneralIFModes)        
+    def setInputAttenuation(self, input, value):
+        return self.setRegister('AT' + input, value)
     def setResolutionBandwidth(self, value):
         if value.upper() == 'AUTO':
-            self.sendDev('CPL1')
+            return self.sendDev('CPL1')
         elif str(value) in self.BW_Resolutions:
-            self.sendDev('CPL0')
-            self.setRegister('RBW', int(value))
+            if self.sendDev('CPL0'):
+                return self.setRegister('RBW', int(value))
+            return 0
         else:
             print("Available Bandwidths:\n" + self.BW_Resolutions)
-            
- ###############################################################################
-## Measurement Triggering
-            
+    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
+    Set Trigger Mode
+    
+    
+    """
     def setTriggerMode(self, value):
         self.sendDev('SWM' + str(self.TriggerModes[value]))
         self.status_TriggerMode = self.TriggerModes[value]
-        
     def triggerReset(self):
         self.sendDev('SWTRG')
-        
-###############################################################################
-
-            
+    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""           
