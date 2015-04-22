@@ -29,7 +29,7 @@ class MainWindow(threading.Thread):
         
     #def run(self):
         self.root = Tk()
-        
+        self.root.iconbitmap(r'c:\Users\Jochen\HP4195A\Images\icon.ico')
         self.root.wm_title("HP4195A User Interface")
         self.root.protocol("WM_DELETE_WINDOW", self.destructor)
         self.init()
